@@ -1,0 +1,1 @@
+- [CardDemo Project](project_carddemo.md) — Full COBOL/CICS to FastAPI+PostgreSQL conversion; program→endpoint map, data model, business rules

@@ -6,3 +6,22 @@ batch-app/markers/*
 /.idea/
 .DS_Store
 **/.DS_Store
+
+# Node
+**/node_modules/
+**/.next/
+**/.pnp.*
+
+# Python
+**/__pycache__/
+**/.pytest_cache/
+**/*.pyc
+**/venv/
+**/.venv/
+
+# Environment files
+**/.env
+
+# Build artifacts
+*.tsbuildinfo
+next-env.d.ts
