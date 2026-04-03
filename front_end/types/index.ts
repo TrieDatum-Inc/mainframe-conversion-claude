@@ -85,6 +85,69 @@ export interface NavigateResponse {
 }
 
 // ============================================================
+// Report types — maps CORPT00C / CORPT0A screen fields
+// ============================================================
+
+/** Report type selection — maps MONTHLYI / YEARLYI / CUSTOMI radio fields */
+export type ReportType = "monthly" | "yearly" | "custom";
+
+/** Report submission request — maps CORPT0AI fields */
+export interface ReportSubmitRequest {
+  /** Report type: monthly/yearly/custom (MONTHLYI/YEARLYI/CUSTOMI) */
+  report_type: ReportType;
+  /** SDTMM/SDTDD/SDTYYYY — custom start date (ISO format) */
+  start_date?: string | null;
+  /** EDTMM/EDTDD/EDTYYYY — custom end date (ISO format) */
+  end_date?: string | null;
+}
+
+/** Report job response — maps post-submission success */
+export interface ReportJobResponse {
+  job_id: number;
+  report_type: ReportType;
+  start_date: string;
+  end_date: string;
+  status: "pending" | "running" | "completed" | "failed";
+  submitted_by: string | null;
+  submitted_at: string;
+  message: string;
+  message_type: "success" | "error" | "info";
+}
+
+/** Report jobs list response */
+export interface ReportJobListResponse {
+  jobs: ReportJobResponse[];
+  total: number;
+}
+
+// ============================================================
+// Payment types — maps COBIL00C / COBIL0A screen fields
+// ============================================================
+
+/** Account balance response — Phase 1 (COBIL00C READ-ACCTDAT-FILE) */
+export interface AccountBalanceResponse {
+  /** ACTIDINO — account ID displayed back to user */
+  acct_id: string;
+  /** CURBALI — current balance (ASKIP, protected display) */
+  curr_bal: number;
+  /** ERRMSG text if balance is zero */
+  message: string | null;
+  message_type: "error" | "info" | "success" | null;
+}
+
+/** Payment response — Phase 2 success (COBIL00C WRITE-TRANSACT-FILE success) */
+export interface PaymentResponse {
+  tran_id: string;
+  acct_id: string;
+  payment_amount: number;
+  new_balance: number;
+  orig_timestamp: string;
+  /** 'Payment successful. Your Transaction ID is <TRAN-ID>.' */
+  message: string;
+  message_type: "success" | "error" | "info";
+}
+
+// ============================================================
 // API error types
 // ============================================================
 

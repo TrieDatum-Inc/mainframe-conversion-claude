@@ -9,10 +9,15 @@
  *   EXEC CICS XCTL                    → navigateMainMenu() / navigateAdminMenu()
  */
 import type {
+  AccountBalanceResponse,
   LoginFormData,
   LoginResponse,
   MenuResponse,
   NavigateResponse,
+  PaymentResponse,
+  ReportJobListResponse,
+  ReportJobResponse,
+  ReportSubmitRequest,
   UserInfo,
 } from "@/types";
 
@@ -173,5 +178,81 @@ export async function navigateAdminMenu(
   return request<NavigateResponse>("/menu/admin/navigate", {
     method: "POST",
     body: JSON.stringify({ option }),
+  });
+}
+
+// ============================================================
+// Reports API — CORPT00C equivalents
+// ============================================================
+
+/**
+ * Submit a report job — maps CORPT00C SUBMIT-JOB-TO-INTRDR.
+ * CONFIRM=Y is implicit: this function is called only after user confirms.
+ *
+ * Report types:
+ *   monthly → MONTHLYI field selected (auto-calculates current month range)
+ *   yearly  → YEARLYI field selected (auto-calculates current year range)
+ *   custom  → CUSTOMI field selected + SDTMM/SDTDD/SDTYYYY + EDTMM/EDTDD/EDTYYYY
+ */
+export async function submitReport(
+  data: ReportSubmitRequest
+): Promise<ReportJobResponse> {
+  return request<ReportJobResponse>("/reports", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+/**
+ * List recent report jobs — displays history of submitted reports.
+ */
+export async function listReports(
+  limit = 20
+): Promise<ReportJobListResponse> {
+  return request<ReportJobListResponse>(`/reports?limit=${limit}`);
+}
+
+/**
+ * Get a single report job by ID.
+ */
+export async function getReport(jobId: number): Promise<ReportJobResponse> {
+  return request<ReportJobResponse>(`/reports/${jobId}`);
+}
+
+// ============================================================
+// Payments API — COBIL00C equivalents
+// ============================================================
+
+/**
+ * Phase 1: Look up account balance.
+ * Maps COBIL00C READ-ACCTDAT-FILE + CURBALI display (lines 184-196).
+ * User sees balance before confirming payment.
+ *
+ * BR-003: Returns info message if balance <= 0 ('You have nothing to pay...')
+ */
+export async function getAccountBalance(
+  acctId: string
+): Promise<AccountBalanceResponse> {
+  return request<AccountBalanceResponse>(`/payments/balance/${acctId}`);
+}
+
+/**
+ * Phase 2: Process bill payment — maps COBIL00C CONF-PAY-YES path.
+ * CONFIRM=Y is implicit: caller only invokes this when user has confirmed.
+ *
+ * Atomic operation:
+ *   1. Reads account (validates positive balance)
+ *   2. Gets card number from cross-reference
+ *   3. Generates next transaction ID (MAX+1)
+ *   4. Creates type-02 payment transaction
+ *   5. Zeros account balance
+ *
+ * BR-004: Always pays full balance (no partial payment).
+ */
+export async function processPayment(
+  acctId: string
+): Promise<PaymentResponse> {
+  return request<PaymentResponse>(`/payments/${acctId}`, {
+    method: "POST",
   });
 }
