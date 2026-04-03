@@ -6,3 +6,13 @@ batch-app/markers/*
 /.idea/
 .DS_Store
 **/.DS_Store
+
+# Credit Card Module — generated files
+front_end/node_modules/
+front_end/.next/
+front_end/.env.local
+fast_api/.venv/
+fast_api/**/__pycache__/
+fast_api/**/*.pyc
+fast_api/.pytest_cache/
+fast_api/.coverage
