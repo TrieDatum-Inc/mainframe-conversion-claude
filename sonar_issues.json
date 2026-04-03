@@ -1,16 +1,954 @@
 {
-  "total": 0,
+  "total": 3,
   "p": 1,
   "ps": 100,
   "paging": {
     "pageIndex": 1,
     "pageSize": 100,
-    "total": 0
+    "total": 3
   },
-  "effortTotal": 0,
-  "debtTotal": 0,
-  "issues": [],
-  "components": [],
-  "organizations": [],
+  "effortTotal": 171,
+  "debtTotal": 171,
+  "issues": [
+    {
+      "key": "AZ1SO350KQyapgKNpP1K",
+      "rule": "python:S3776",
+      "severity": "CRITICAL",
+      "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+      "project": "TrieDatum-Inc_mainframe-conversion-claude",
+      "line": 1,
+      "hash": "93e8d4d2ece3ad9aaeefb2fedb604f2d",
+      "textRange": {
+        "startLine": 1,
+        "endLine": 1,
+        "startOffset": 4,
+        "endOffset": 23
+      },
+      "flows": [
+        {
+          "locations": [
+            {
+              "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+              "textRange": {
+                "startLine": 4,
+                "endLine": 4,
+                "startOffset": 4,
+                "endOffset": 6
+              },
+              "msg": "+1"
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+              "textRange": {
+                "startLine": 9,
+                "endLine": 9,
+                "startOffset": 4,
+                "endOffset": 6
+              },
+              "msg": "+1"
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+              "textRange": {
+                "startLine": 14,
+                "endLine": 14,
+                "startOffset": 4,
+                "endOffset": 6
+              },
+              "msg": "+1"
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+              "textRange": {
+                "startLine": 15,
+                "endLine": 15,
+                "startOffset": 8,
+                "endOffset": 10
+              },
+              "msg": "+2 (incl 1 for nesting)"
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+              "textRange": {
+                "startLine": 16,
+                "endLine": 16,
+                "startOffset": 12,
+                "endOffset": 14
+              },
+              "msg": "+3 (incl 2 for nesting)"
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+              "textRange": {
+                "startLine": 17,
+                "endLine": 17,
+                "startOffset": 16,
+                "endOffset": 18
+              },
+              "msg": "+4 (incl 3 for nesting)"
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+              "textRange": {
+                "startLine": 19,
+                "endLine": 19,
+                "startOffset": 20,
+                "endOffset": 22
+              },
+              "msg": "+5 (incl 4 for nesting)"
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+              "textRange": {
+                "startLine": 21,
+                "endLine": 21,
+                "startOffset": 20,
+                "endOffset": 24
+              },
+              "msg": "+1"
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+              "textRange": {
+                "startLine": 23,
+                "endLine": 23,
+                "startOffset": 20,
+                "endOffset": 24
+              },
+              "msg": "+1"
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+              "textRange": {
+                "startLine": 25,
+                "endLine": 25,
+                "startOffset": 24,
+                "endOffset": 26
+              },
+              "msg": "+6 (incl 5 for nesting)"
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+              "textRange": {
+                "startLine": 27,
+                "endLine": 27,
+                "startOffset": 28,
+                "endOffset": 30
+              },
+              "msg": "+7 (incl 6 for nesting)"
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+              "textRange": {
+                "startLine": 30,
+                "endLine": 30,
+                "startOffset": 16,
+                "endOffset": 20
+              },
+              "msg": "+1"
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+              "textRange": {
+                "startLine": 31,
+                "endLine": 31,
+                "startOffset": 20,
+                "endOffset": 22
+              },
+              "msg": "+5 (incl 4 for nesting)"
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+              "textRange": {
+                "startLine": 33,
+                "endLine": 33,
+                "startOffset": 24,
+                "endOffset": 26
+              },
+              "msg": "+6 (incl 5 for nesting)"
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+              "textRange": {
+                "startLine": 35,
+                "endLine": 35,
+                "startOffset": 28,
+                "endOffset": 30
+              },
+              "msg": "+7 (incl 6 for nesting)"
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+              "textRange": {
+                "startLine": 38,
+                "endLine": 38,
+                "startOffset": 28,
+                "endOffset": 32
+              },
+              "msg": "+1"
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+              "textRange": {
+                "startLine": 39,
+                "endLine": 39,
+                "startOffset": 32,
+                "endOffset": 34
+              },
+              "msg": "+8 (incl 7 for nesting)"
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+              "textRange": {
+                "startLine": 42,
+                "endLine": 42,
+                "startOffset": 20,
+                "endOffset": 24
+              },
+              "msg": "+1"
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+              "textRange": {
+                "startLine": 45,
+                "endLine": 45,
+                "startOffset": 16,
+                "endOffset": 20
+              },
+              "msg": "+1"
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+              "textRange": {
+                "startLine": 48,
+                "endLine": 48,
+                "startOffset": 20,
+                "endOffset": 22
+              },
+              "msg": "+5 (incl 4 for nesting)"
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+              "textRange": {
+                "startLine": 49,
+                "endLine": 49,
+                "startOffset": 24,
+                "endOffset": 26
+              },
+              "msg": "+6 (incl 5 for nesting)"
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+              "textRange": {
+                "startLine": 52,
+                "endLine": 52,
+                "startOffset": 24,
+                "endOffset": 28
+              },
+              "msg": "+1"
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+              "textRange": {
+                "startLine": 53,
+                "endLine": 53,
+                "startOffset": 28,
+                "endOffset": 30
+              },
+              "msg": "+7 (incl 6 for nesting)"
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+              "textRange": {
+                "startLine": 55,
+                "endLine": 55,
+                "startOffset": 28,
+                "endOffset": 32
+              },
+              "msg": "+1"
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+              "textRange": {
+                "startLine": 57,
+                "endLine": 57,
+                "startOffset": 12,
+                "endOffset": 16
+              },
+              "msg": "+1"
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+              "textRange": {
+                "startLine": 60,
+                "endLine": 60,
+                "startOffset": 8,
+                "endOffset": 12
+              },
+              "msg": "+1"
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+              "textRange": {
+                "startLine": 62,
+                "endLine": 62,
+                "startOffset": 12,
+                "endOffset": 14
+              },
+              "msg": "+3 (incl 2 for nesting)"
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+              "textRange": {
+                "startLine": 63,
+                "endLine": 63,
+                "startOffset": 16,
+                "endOffset": 18
+              },
+              "msg": "+4 (incl 3 for nesting)"
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+              "textRange": {
+                "startLine": 65,
+                "endLine": 65,
+                "startOffset": 20,
+                "endOffset": 22
+              },
+              "msg": "+5 (incl 4 for nesting)"
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+              "textRange": {
+                "startLine": 66,
+                "endLine": 66,
+                "startOffset": 24,
+                "endOffset": 26
+              },
+              "msg": "+6 (incl 5 for nesting)"
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+              "textRange": {
+                "startLine": 68,
+                "endLine": 68,
+                "startOffset": 4,
+                "endOffset": 8
+              },
+              "msg": "+1"
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+              "textRange": {
+                "startLine": 69,
+                "endLine": 69,
+                "startOffset": 8,
+                "endOffset": 10
+              },
+              "msg": "+2 (incl 1 for nesting)"
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+              "textRange": {
+                "startLine": 72,
+                "endLine": 72,
+                "startOffset": 12,
+                "endOffset": 14
+              },
+              "msg": "+3 (incl 2 for nesting)"
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+              "textRange": {
+                "startLine": 73,
+                "endLine": 73,
+                "startOffset": 16,
+                "endOffset": 18
+              },
+              "msg": "+4 (incl 3 for nesting)"
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+              "textRange": {
+                "startLine": 75,
+                "endLine": 75,
+                "startOffset": 20,
+                "endOffset": 22
+              },
+              "msg": "+5 (incl 4 for nesting)"
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+              "textRange": {
+                "startLine": 78,
+                "endLine": 78,
+                "startOffset": 20,
+                "endOffset": 24
+              },
+              "msg": "+1"
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+              "textRange": {
+                "startLine": 80,
+                "endLine": 80,
+                "startOffset": 24,
+                "endOffset": 26
+              },
+              "msg": "+6 (incl 5 for nesting)"
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+              "textRange": {
+                "startLine": 83,
+                "endLine": 83,
+                "startOffset": 8,
+                "endOffset": 12
+              },
+              "msg": "+1"
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+              "textRange": {
+                "startLine": 85,
+                "endLine": 85,
+                "startOffset": 12,
+                "endOffset": 14
+              },
+              "msg": "+3 (incl 2 for nesting)"
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+              "textRange": {
+                "startLine": 86,
+                "endLine": 86,
+                "startOffset": 16,
+                "endOffset": 18
+              },
+              "msg": "+4 (incl 3 for nesting)"
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+              "textRange": {
+                "startLine": 89,
+                "endLine": 89,
+                "startOffset": 4,
+                "endOffset": 8
+              },
+              "msg": "+1"
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+              "textRange": {
+                "startLine": 90,
+                "endLine": 90,
+                "startOffset": 8,
+                "endOffset": 10
+              },
+              "msg": "+2 (incl 1 for nesting)"
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+              "textRange": {
+                "startLine": 91,
+                "endLine": 91,
+                "startOffset": 12,
+                "endOffset": 14
+              },
+              "msg": "+3 (incl 2 for nesting)"
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+              "textRange": {
+                "startLine": 93,
+                "endLine": 93,
+                "startOffset": 16,
+                "endOffset": 18
+              },
+              "msg": "+4 (incl 3 for nesting)"
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+              "textRange": {
+                "startLine": 95,
+                "endLine": 95,
+                "startOffset": 12,
+                "endOffset": 16
+              },
+              "msg": "+1"
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+              "textRange": {
+                "startLine": 96,
+                "endLine": 96,
+                "startOffset": 16,
+                "endOffset": 18
+              },
+              "msg": "+4 (incl 3 for nesting)"
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+              "textRange": {
+                "startLine": 96,
+                "endLine": 96,
+                "startOffset": 40,
+                "endOffset": 43
+              },
+              "msg": "+1"
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+              "textRange": {
+                "startLine": 98,
+                "endLine": 98,
+                "startOffset": 20,
+                "endOffset": 22
+              },
+              "msg": "+5 (incl 4 for nesting)"
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+              "textRange": {
+                "startLine": 100,
+                "endLine": 100,
+                "startOffset": 24,
+                "endOffset": 26
+              },
+              "msg": "+6 (incl 5 for nesting)"
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+              "textRange": {
+                "startLine": 102,
+                "endLine": 102,
+                "startOffset": 28,
+                "endOffset": 30
+              },
+              "msg": "+7 (incl 6 for nesting)"
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+              "textRange": {
+                "startLine": 104,
+                "endLine": 104,
+                "startOffset": 16,
+                "endOffset": 20
+              },
+              "msg": "+1"
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+              "textRange": {
+                "startLine": 107,
+                "endLine": 107,
+                "startOffset": 8,
+                "endOffset": 12
+              },
+              "msg": "+1"
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+              "textRange": {
+                "startLine": 110,
+                "endLine": 110,
+                "startOffset": 4,
+                "endOffset": 8
+              },
+              "msg": "+1"
+            }
+          ]
+        },
+        {
+          "locations": [
+            {
+              "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+              "textRange": {
+                "startLine": 113,
+                "endLine": 113,
+                "startOffset": 8,
+                "endOffset": 10
+              },
+              "msg": "+2 (incl 1 for nesting)"
+            }
+          ]
+        }
+      ],
+      "status": "OPEN",
+      "message": "Refactor this function to reduce its Cognitive Complexity from 171 to the 15 allowed.",
+      "effort": "2h41min",
+      "debt": "2h41min",
+      "assignee": "mridulgohain-triedatum-jxfob@github",
+      "author": "mridul.gohain@triedatum.com",
+      "tags": [
+        "brain-overload"
+      ],
+      "creationDate": "2026-04-03T07:22:06+0000",
+      "updateDate": "2026-04-03T07:25:02+0000",
+      "type": "CODE_SMELL",
+      "organization": "triedatum-inc",
+      "pullRequest": "6",
+      "cleanCodeAttribute": "FOCUSED",
+      "cleanCodeAttributeCategory": "ADAPTABLE",
+      "impacts": [
+        {
+          "softwareQuality": "MAINTAINABILITY",
+          "severity": "HIGH"
+        }
+      ],
+      "issueStatus": "OPEN",
+      "projectName": "mainframe-conversion-claude",
+      "internalTags": []
+    },
+    {
+      "key": "AZ1SO350KQyapgKNpP1I",
+      "rule": "python:S1066",
+      "severity": "MAJOR",
+      "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+      "project": "TrieDatum-Inc_mainframe-conversion-claude",
+      "line": 63,
+      "hash": "2bab5374bb7684f416a1128016b19d61",
+      "textRange": {
+        "startLine": 63,
+        "endLine": 63,
+        "startOffset": 16,
+        "endOffset": 18
+      },
+      "flows": [
+        {
+          "locations": [
+            {
+              "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+              "textRange": {
+                "startLine": 62,
+                "endLine": 62,
+                "startOffset": 12,
+                "endOffset": 14
+              },
+              "msg": "enclosing"
+            }
+          ]
+        }
+      ],
+      "status": "OPEN",
+      "message": "Merge this if statement with the enclosing one.",
+      "effort": "5min",
+      "debt": "5min",
+      "assignee": "mridulgohain-triedatum-jxfob@github",
+      "author": "mridul.gohain@triedatum.com",
+      "tags": [
+        "clumsy"
+      ],
+      "creationDate": "2026-04-03T07:22:06+0000",
+      "updateDate": "2026-04-03T07:25:02+0000",
+      "type": "CODE_SMELL",
+      "organization": "triedatum-inc",
+      "pullRequest": "6",
+      "cleanCodeAttribute": "CLEAR",
+      "cleanCodeAttributeCategory": "INTENTIONAL",
+      "impacts": [
+        {
+          "softwareQuality": "MAINTAINABILITY",
+          "severity": "MEDIUM"
+        }
+      ],
+      "issueStatus": "OPEN",
+      "projectName": "mainframe-conversion-claude",
+      "internalTags": []
+    },
+    {
+      "key": "AZ1SO350KQyapgKNpP1J",
+      "rule": "python:S1066",
+      "severity": "MAJOR",
+      "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+      "project": "TrieDatum-Inc_mainframe-conversion-claude",
+      "line": 73,
+      "hash": "bc7c4cbea90c13dc73e8fa73e1401c48",
+      "textRange": {
+        "startLine": 73,
+        "endLine": 73,
+        "startOffset": 16,
+        "endOffset": 18
+      },
+      "flows": [
+        {
+          "locations": [
+            {
+              "component": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+              "textRange": {
+                "startLine": 72,
+                "endLine": 72,
+                "startOffset": 12,
+                "endOffset": 14
+              },
+              "msg": "enclosing"
+            }
+          ]
+        }
+      ],
+      "status": "OPEN",
+      "message": "Merge this if statement with the enclosing one.",
+      "effort": "5min",
+      "debt": "5min",
+      "assignee": "mridulgohain-triedatum-jxfob@github",
+      "author": "mridul.gohain@triedatum.com",
+      "tags": [
+        "clumsy"
+      ],
+      "creationDate": "2026-04-03T07:22:06+0000",
+      "updateDate": "2026-04-03T07:25:02+0000",
+      "type": "CODE_SMELL",
+      "organization": "triedatum-inc",
+      "pullRequest": "6",
+      "cleanCodeAttribute": "CLEAR",
+      "cleanCodeAttributeCategory": "INTENTIONAL",
+      "impacts": [
+        {
+          "softwareQuality": "MAINTAINABILITY",
+          "severity": "MEDIUM"
+        }
+      ],
+      "issueStatus": "OPEN",
+      "projectName": "mainframe-conversion-claude",
+      "internalTags": []
+    }
+  ],
+  "components": [
+    {
+      "organization": "triedatum-inc",
+      "key": "TrieDatum-Inc_mainframe-conversion-claude:test/complex_processor.py",
+      "uuid": "AZ1SO3jzKQyapgKNpP1G",
+      "enabled": true,
+      "qualifier": "FIL",
+      "name": "complex_processor.py",
+      "longName": "test/complex_processor.py",
+      "path": "test/complex_processor.py",
+      "pullRequest": "6"
+    },
+    {
+      "organization": "triedatum-inc",
+      "key": "TrieDatum-Inc_mainframe-conversion-claude",
+      "uuid": "AZ1SOz4N_vzxr3Ipqe4Z",
+      "enabled": true,
+      "qualifier": "TRK",
+      "name": "mainframe-conversion-claude",
+      "longName": "mainframe-conversion-claude",
+      "pullRequest": "6"
+    }
+  ],
+  "organizations": [
+    {
+      "key": "triedatum-inc",
+      "name": "TrieDatum-Inc"
+    }
+  ],
   "facets": []
 }
