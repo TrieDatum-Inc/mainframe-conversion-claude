@@ -228,6 +228,40 @@ INSERT INTO transactions (
 ON CONFLICT (tran_id) DO NOTHING;
 
 -- ============================================================
+-- REPORT JOBS (sample data for CORPT00C testing)
+-- These represent previously submitted report jobs.
+-- ============================================================
+INSERT INTO report_jobs (report_type, start_date, end_date, status, submitted_by, submitted_at, completed_at) VALUES
+(
+    'monthly',
+    DATE_TRUNC('month', CURRENT_DATE)::DATE,
+    (DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month - 1 day')::DATE,
+    'completed',
+    'USER0001',
+    NOW() - INTERVAL '2 days',
+    NOW() - INTERVAL '2 days' + INTERVAL '5 minutes'
+),
+(
+    'yearly',
+    (DATE_TRUNC('year', CURRENT_DATE))::DATE,
+    (DATE_TRUNC('year', CURRENT_DATE) + INTERVAL '1 year - 1 day')::DATE,
+    'completed',
+    'ADMIN001',
+    NOW() - INTERVAL '7 days',
+    NOW() - INTERVAL '7 days' + INTERVAL '12 minutes'
+),
+(
+    'custom',
+    '2024-01-01',
+    '2024-03-31',
+    'pending',
+    'USER0002',
+    NOW() - INTERVAL '1 hour',
+    NULL
+)
+ON CONFLICT DO NOTHING;
+
+-- ============================================================
 -- DISCLOSURE GROUPS (interest rate reference data)
 -- ============================================================
 INSERT INTO disclosure_groups (acct_group_id, tran_type_cd, tran_cat_cd, interest_rate, fee_amount) VALUES

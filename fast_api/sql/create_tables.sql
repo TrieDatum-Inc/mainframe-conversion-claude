@@ -213,3 +213,24 @@ CREATE TABLE IF NOT EXISTS authorization_fraud (
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS xauthfrd ON authorization_fraud(card_num ASC, auth_ts DESC);
+
+-- ============================================================
+-- REPORT JOBS TABLE (new — replaces CORPT00C TDQ JOBS submission)
+-- COBOL equivalent: EXEC CICS WRITEQ TD QUEUE('JOBS') writes JCL to internal reader
+-- Modern: INSERT a report_jobs row; background processing handles execution
+-- PROC TRANREPT → background task reading transactions filtered by date range
+-- ============================================================
+CREATE TABLE IF NOT EXISTS report_jobs (
+    job_id         SERIAL          PRIMARY KEY,
+    report_type    VARCHAR(20)     NOT NULL,   -- 'monthly', 'yearly', 'custom' (WS-REPORT-NAME)
+    start_date     DATE            NOT NULL,   -- PARM-START-DATE in JCL inline data
+    end_date       DATE            NOT NULL,   -- PARM-END-DATE in JCL inline data
+    status         VARCHAR(20)     NOT NULL DEFAULT 'pending',  -- pending/running/completed/failed
+    submitted_by   VARCHAR(8),                -- CDEMO-USERID from COMMAREA
+    submitted_at   TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    completed_at   TIMESTAMP WITH TIME ZONE,
+    result_path    VARCHAR(255)               -- path to generated report (replaces GDG TRANREPT)
+);
+
+CREATE INDEX IF NOT EXISTS idx_report_jobs_submitted_at ON report_jobs(submitted_at DESC);
+CREATE INDEX IF NOT EXISTS idx_report_jobs_status ON report_jobs(status);
