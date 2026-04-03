@@ -1,0 +1,6 @@
+- [CardDemo BMS Screen Inventory](project_bms_screens.md) — 21 screens fully documented; mapsets, fields, navigation flow; tech_specs/BMS_Screens_spec.md
+- [Transaction Program Specs](project_transaction_specs.md) — 6 transaction programs spec'd (COTRN00C/01C/02C + CBTRN01C/02C/03C); key anomalies, business rules, file access patterns
+- [CardDemo Project Overview](project_carddemo_overview.md) — CardDemo app structure, transaction flow, key programs including CORPT00C/COBIL00C/CBEXPORT/CBIMPORT/CBCUS01C/CSUTLDTC/COBSWAIT, VSAM files, naming conventions
+- [CardDemo User Administration Subsystem](project_carddemo_user_subsystem.md) — COUSR00C–COUSR03C programs, USRSEC VSAM, transactions CU00–CU03, nav flow, known defects
+- [CardDemo Credit Card Online Module](project_carddemo_credit_card_module.md) — COCRDLIC/COCRDSLC/COCRDUPC, CARDDAT VSAM, COMMAREA state machine, concurrency pattern, missing artifacts
+- [CardDemo Account Subsystem](project_account_subsystem.md) — COACTVWC/COACTUPC (online) + CBACT01C–04C (batch); state machines, file chains, interest formula, copybook layouts, known defects
