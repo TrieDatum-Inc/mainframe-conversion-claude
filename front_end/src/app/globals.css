@@ -1,0 +1,6 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+:root { --font-mono: "Courier New", Courier, monospace; }
+body { font-family: var(--font-mono); background-color: #030712; color: #f9fafb; }
+input[type="text"] { caret-color: #86efac; }
