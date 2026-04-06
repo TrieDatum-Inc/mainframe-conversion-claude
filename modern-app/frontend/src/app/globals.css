@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: #f9fafb;
+    --foreground: #111827;
+  }
+  body {
+    @apply bg-gray-50 text-gray-900 antialiased;
+  }
+}
