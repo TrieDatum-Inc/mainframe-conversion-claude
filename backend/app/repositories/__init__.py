@@ -1,13 +1,6 @@
-"""Repository layer — all database access operations."""
+# Repository layer — all SQLAlchemy database access
+# Maps to CICS READ/WRITE/REWRITE/DELETE DATASET commands
+from app.repositories.transaction_type_repository import TransactionTypeRepository
+from app.repositories.user_repository import UserRepository
 
-from app.repositories.account_repository import AccountRepository
-from app.repositories.card_xref_repository import CardXrefRepository
-from app.repositories.credit_card_repository import CreditCardRepository
-from app.repositories.customer_repository import CustomerRepository
-
-__all__ = [
-    "AccountRepository",
-    "CustomerRepository",
-    "CreditCardRepository",
-    "CardXrefRepository",
-]
+__all__ = ["TransactionTypeRepository", "UserRepository"]

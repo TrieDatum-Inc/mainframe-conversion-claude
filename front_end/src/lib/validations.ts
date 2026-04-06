@@ -69,3 +69,45 @@ export const userUpdateSchema = z.object({
 });
 
 export type UserUpdateFormValues = z.infer<typeof userUpdateSchema>;
+
+// ---------------------------------------------------------------------------
+// Transaction Type schemas — maps COTRTUPC 1200-EDIT-MAP-INPUTS validation
+// ---------------------------------------------------------------------------
+
+/**
+ * Validation schema for creating a transaction type.
+ * Rules mirror COTRTUPC 1210-EDIT-TRANTYPE + 1230-EDIT-ALPHANUM-REQD.
+ */
+export const transactionTypeCreateSchema = z.object({
+  type_code: z
+    .string()
+    .min(1, 'Transaction type code is required')
+    .max(2, 'Type code must be 1-2 digits')
+    .regex(/^[0-9]{1,2}$/, 'Type code must be numeric (01-99)')
+    // COTRTUPC 1210-EDIT-TRANTYPE: non-zero check
+    .refine((v) => parseInt(v, 10) > 0, 'Transaction type code must not be zero'),
+  description: z
+    .string()
+    .min(1, 'Description is required')
+    .max(50, 'Description must not exceed 50 characters')
+    // COTRTUPC 1230-EDIT-ALPHANUM-REQD: alphanumeric + spaces only
+    .regex(/^[A-Za-z0-9 ]+$/, 'Description must contain only letters, numbers, and spaces')
+    .refine((v) => v.trim().length > 0, 'Description cannot be blank'),
+});
+
+export type TransactionTypeCreateFormValues = z.infer<typeof transactionTypeCreateSchema>;
+
+/**
+ * Validation schema for updating a transaction type.
+ * Only description is editable — type_code is always protected.
+ */
+export const transactionTypeUpdateSchema = z.object({
+  description: z
+    .string()
+    .min(1, 'Description is required')
+    .max(50, 'Description must not exceed 50 characters')
+    .regex(/^[A-Za-z0-9 ]+$/, 'Description must contain only letters, numbers, and spaces')
+    .refine((v) => v.trim().length > 0, 'Description cannot be blank'),
+});
+
+export type TransactionTypeUpdateFormValues = z.infer<typeof transactionTypeUpdateSchema>;

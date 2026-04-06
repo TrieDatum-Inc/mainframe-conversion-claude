@@ -1,29 +1,23 @@
-"""Pydantic schema registry."""
-
-from app.schemas.account import (
-    AccountUpdateRequest,
-    AccountViewResponse,
-    CustomerDetailResponse,
-    CustomerUpdateRequest,
+# Pydantic request/response schemas — replaces COBOL BMS map field definitions
+from app.schemas.auth import LoginRequest, LoginResponse, TokenPayload
+from app.schemas.common import ErrorResponse, MessageResponse
+from app.schemas.transaction_type import (
+    TransactionTypeCreateRequest,
+    TransactionTypeListResponse,
+    TransactionTypeResponse,
+    TransactionTypeUpdateRequest,
 )
-from app.schemas.common import ErrorResponse, MessageResponse, PaginatedResponse
-from app.schemas.credit_card import (
-    CardDetailResponse,
-    CardListItem,
-    CardListResponse,
-    CardUpdateRequest,
-)
+from app.schemas.user import UserResponse
 
 __all__ = [
-    "PaginatedResponse",
+    "LoginRequest",
+    "LoginResponse",
+    "TokenPayload",
     "ErrorResponse",
     "MessageResponse",
-    "AccountViewResponse",
-    "AccountUpdateRequest",
-    "CustomerDetailResponse",
-    "CustomerUpdateRequest",
-    "CardListItem",
-    "CardListResponse",
-    "CardDetailResponse",
-    "CardUpdateRequest",
+    "TransactionTypeCreateRequest",
+    "TransactionTypeListResponse",
+    "TransactionTypeResponse",
+    "TransactionTypeUpdateRequest",
+    "UserResponse",
 ]

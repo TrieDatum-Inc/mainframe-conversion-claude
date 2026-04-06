@@ -1,384 +1,188 @@
 """
-Custom exception classes for the CardDemo backend.
+Custom exception classes for the CardDemo application.
 
-COBOL origin: Maps CICS RESP codes and program-level error conditions
-to Python exceptions that produce structured HTTP error responses.
+COBOL origin: Maps CICS RESP codes and ABEND conditions to typed Python exceptions.
+These exceptions are caught by global handlers in handlers.py and converted
+to structured HTTP responses with consistent error_code/message format.
 
-RESP code → HTTP status mapping:
-  RESP=NOTFND (CICS 13)    → 404 Not Found      → UserNotFoundError
-  RESP=DUPKEY/DUPREC       → 409 Conflict        → UserAlreadyExistsError
-  Blank field validation   → 422 Unprocessable   → ValidationError (Pydantic)
-  No fields modified       → 422 Unprocessable   → NoChangesDetectedError
-  EIBCALEN=0 / no token    → 401 Unauthorized    → raised by auth dependency
-  Non-admin access         → 403 Forbidden       → raised by require_admin dependency
+COBOL → Exception mapping:
+    RESP=DFHRESP(NOTFND) (13)     → NotFoundError → HTTP 404
+    RESP=DFHRESP(DUPKEY) (16)     → DuplicateResourceError → HTTP 409
+    RESP=DFHRESP(DUPREC) (17)     → DuplicateResourceError → HTTP 409
+    Password mismatch              → InvalidCredentialsError → HTTP 401
+    CDEMO-USRTYP-ADMIN check fail → PermissionDeniedError → HTTP 403
+    Field validation failure       → ValidationError → HTTP 422
 """
 
-from fastapi import HTTPException, status
+
+class CardDemoException(Exception):
+    """Base exception for all CardDemo application errors."""
+
+    def __init__(self, error_code: str, message: str) -> None:
+        self.error_code = error_code
+        self.message = message
+        super().__init__(message)
 
 
-class UserNotFoundError(HTTPException):
+class NotFoundError(CardDemoException):
     """
-    COBOL origin: COUSR02C/COUSR03C READ-USER-SEC-FILE RESP=NOTFND.
-    Message: 'User ID NOT found in the system'
+    Resource not found.
+
+    COBOL: RESP=DFHRESP(NOTFND) from CICS READ/DELETE.
+    Examples: user not found, account not found, card not found.
     """
 
-    def __init__(self, user_id: str) -> None:
+    def __init__(self, resource: str, identifier: str) -> None:
         super().__init__(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "error_code": "USER_NOT_FOUND",
-                "message": f"User ID NOT found in the system: {user_id}",
-                "details": [],
-            },
+            error_code=f"{resource.upper()}_NOT_FOUND",
+            message=f"{resource} ID NOT found in the system: {identifier}",
         )
 
 
-class UserAlreadyExistsError(HTTPException):
+class DuplicateResourceError(CardDemoException):
     """
-    COBOL origin: COUSR01C WRITE-USER-SEC-FILE RESP=DUPKEY or RESP=DUPREC.
-    Message: 'User ID already exist...'
+    Duplicate key on write.
+
+    COBOL: RESP=DFHRESP(DUPKEY) or DFHRESP(DUPREC) from CICS WRITE.
+    Example: user ID already exists when creating a new user.
     """
 
-    def __init__(self, user_id: str) -> None:
+    def __init__(self, resource: str, identifier: str) -> None:
         super().__init__(
-            status_code=status.HTTP_409_CONFLICT,
-            detail={
-                "error_code": "USER_ALREADY_EXISTS",
-                "message": f"User ID already exist: {user_id}",
-                "details": [],
-            },
+            error_code=f"{resource.upper()}_ALREADY_EXISTS",
+            message=f"{resource} ID already exist: {identifier}",
         )
 
 
-class NoChangesDetectedError(HTTPException):
+class InvalidCredentialsError(CardDemoException):
     """
-    COBOL origin: COUSR02C UPDATE-USER-INFO — USR-MODIFIED-NO path.
-    Message: 'Please modify to update...'
-    Color: DFHRED (red message bar)
+    Invalid user ID or password.
+
+    COBOL: RESP=NOTFND or password mismatch in COSGN00C PROCESS-ENTER-KEY.
+    Uses uniform message to prevent user enumeration (preserves COBOL behavior).
     """
 
     def __init__(self) -> None:
         super().__init__(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail={
-                "error_code": "NO_CHANGES_DETECTED",
-                "message": "Please modify at least one field to update",
-                "details": [],
-            },
+            error_code="INVALID_CREDENTIALS",
+            message="Invalid User ID or Password",
         )
 
 
-class AdminRequiredError(HTTPException):
+class PermissionDeniedError(CardDemoException):
     """
-    Raised when a non-admin user attempts to access an admin-only endpoint.
+    Insufficient privileges for the requested operation.
 
-    COBOL origin: COUSR00C, COUSR01C, COUSR02C, COUSR03C are all admin-only,
-    reachable only from COADM01C. Non-admin users cannot reach these programs
-    via the CICS menu.
+    COBOL: CDEMO-USRTYP-ADMIN check — regular users cannot access admin screens.
     """
 
     def __init__(self) -> None:
         super().__init__(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail={
-                "error_code": "ADMIN_REQUIRED",
-                "message": "This operation requires administrator privileges",
-                "details": [],
-            },
+            error_code="ADMIN_REQUIRED",
+            message="This function requires administrator privileges",
         )
 
 
-class UnauthorizedError(HTTPException):
+class ValidationError(CardDemoException):
     """
-    COBOL origin: EIBCALEN=0 check — unauthenticated session returns to COSGN00C.
+    Business rule validation failure.
+
+    COBOL: WS-ERR-FLG-ON paths — field blank checks, cross-field validations.
     """
 
-    def __init__(self) -> None:
-        super().__init__(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail={
-                "error_code": "UNAUTHORIZED",
-                "message": "Authentication required",
-                "details": [],
-            },
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+    def __init__(self, error_code: str, message: str) -> None:
+        super().__init__(error_code=error_code, message=message)
 
 
-# ---------------------------------------------------------------------------
-# Transaction Type errors (COTRTLIC / COTRTUPC)
-# ---------------------------------------------------------------------------
+# =============================================================================
+# Transaction Type error classes — COTRTLIC / COTRTUPC
+# =============================================================================
 
 
-class TransactionTypeNotFoundError(HTTPException):
+class TransactionTypeNotFoundError(CardDemoException):
     """
-    COBOL origin: COTRTUPC 9100-GET-TRANSACTION-TYPE → SQLCODE +100 (NOT FOUND).
-    Message: 'Record not found. Deleted by others ?...' (COTRTLIC 9200-UPDATE-RECORD)
+    Transaction type not found by type_code lookup.
+
+    COBOL: COTRTLIC 9200-UPDATE-RECORD SQLCODE +100 (no rows returned).
+            COTRTUPC TTUP-DETAILS-NOT-FOUND state (9000-READ-TRANTYPE returns empty).
+    Maps to HTTP 404.
     """
 
     def __init__(self, type_code: str) -> None:
         super().__init__(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "error_code": "TRANSACTION_TYPE_NOT_FOUND",
-                "message": f"Transaction type '{type_code}' not found in the system",
-                "details": [],
-            },
+            error_code="TRANSACTION_TYPE_NOT_FOUND",
+            message=f"Transaction type not found: {type_code}",
         )
 
 
-class TransactionTypeAlreadyExistsError(HTTPException):
+class TransactionTypeAlreadyExistsError(CardDemoException):
     """
-    COBOL origin: COTRTUPC 9700-INSERT-RECORD implicit duplicate check.
-    Detected via SELECT before INSERT; returns 409 Conflict.
+    Duplicate type_code on INSERT.
+
+    COBOL: COTRTUPC 9700-INSERT-RECORD SQLCODE -803 (duplicate key).
+    Maps to HTTP 409.
     """
 
     def __init__(self, type_code: str) -> None:
         super().__init__(
-            status_code=status.HTTP_409_CONFLICT,
-            detail={
-                "error_code": "TRANSACTION_TYPE_ALREADY_EXISTS",
-                "message": f"Transaction type '{type_code}' already exists",
-                "details": [],
-            },
+            error_code="TRANSACTION_TYPE_ALREADY_EXISTS",
+            message=f"Transaction type already exists: {type_code}",
         )
 
 
-class TransactionTypeHasDependentsError(HTTPException):
+class TransactionTypeHasDependentsError(CardDemoException):
     """
-    COBOL origin: COTRTLIC 9300-DELETE-RECORD SQLCODE -532 (FK violation).
-    Message: 'Please delete associated child records first:...'
-    Raised when transactions reference this type_code.
+    Cannot delete a transaction type that is referenced by transactions.
+
+    COBOL: COTRTUPC 9800-DELETE-PROCESSING SQLCODE -532 (referential integrity violation).
+           COTRTLIC 9300-DELETE-RECORD FK violation.
+    Maps to HTTP 409.
     """
 
     def __init__(self, type_code: str) -> None:
         super().__init__(
-            status_code=status.HTTP_409_CONFLICT,
-            detail={
-                "error_code": "TRANSACTION_TYPE_HAS_DEPENDENTS",
-                "message": (
-                    f"Transaction type '{type_code}' cannot be deleted. "
-                    "Please delete associated transaction records first."
-                ),
-                "details": [],
-            },
+            error_code="TRANSACTION_TYPE_HAS_DEPENDENTS",
+            message=(
+                f"Transaction type '{type_code}' cannot be deleted "
+                "because transactions reference it."
+            ),
         )
 
 
-class TransactionTypeOptimisticLockError(HTTPException):
+class TransactionTypeOptimisticLockError(CardDemoException):
     """
-    Replaces COTRTLIC WS-DATACHANGED-FLAG and COTRTUPC 1205-COMPARE-OLD-NEW.
-    Raised when the client's updated_at version does not match the server's current value,
-    indicating another user modified the record between GET and PUT.
+    Optimistic lock conflict on update — record modified since last fetch.
+
+    COBOL: COTRTLIC WS-DATACHANGED-FLAG — set when a concurrent user modified
+           the same row between the browse and the update.
+           COTRTUPC 1205-COMPARE-OLD-NEW — compares current DB row against the
+           CCUP-OLD-DETAILS snapshot taken at TTUP-SHOW-DETAILS time.
+    Maps to HTTP 409.
     """
 
     def __init__(self, type_code: str) -> None:
         super().__init__(
-            status_code=status.HTTP_409_CONFLICT,
-            detail={
-                "error_code": "OPTIMISTIC_LOCK_CONFLICT",
-                "message": (
-                    f"Transaction type '{type_code}' was modified by another user. "
-                    "Please refresh and try again."
-                ),
-                "details": [],
-            },
+            error_code="OPTIMISTIC_LOCK_CONFLICT",
+            message=(
+                f"Transaction type '{type_code}' was modified by another user. "
+                "Please reload and retry."
+            ),
         )
 
 
-class TransactionTypeNoChangesError(HTTPException):
+class TransactionTypeNoChangesError(CardDemoException):
     """
-    COBOL origin: COTRTLIC WS-MESG-NO-CHANGES-DETECTED.
-    'No change detected with respect to database values.'
-    Raised when the new description equals the current stored description.
+    No-op update — submitted description equals current database value.
+
+    COBOL: COTRTLIC WS-MESG-NO-CHANGES-DETECTED.
+    Maps to HTTP 422 (Unprocessable Entity — valid request, but no action needed).
     """
 
-    def __init__(self) -> None:
+    def __init__(self, type_code: str) -> None:
         super().__init__(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail={
-                "error_code": "NO_CHANGES_DETECTED",
-                "message": "No change detected with respect to database values",
-                "details": [],
-            },
-        )
-
-
-# ---------------------------------------------------------------------------
-# Account errors (COACTVWC / COACTUPC)
-# ---------------------------------------------------------------------------
-
-
-class AccountNotFoundError(HTTPException):
-    """
-    COBOL origin: COACTVWC/COACTUPC READ-ACCT-BY-ACCT-ID RESP=NOTFND.
-    """
-
-    def __init__(self, account_id: int) -> None:
-        super().__init__(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "error_code": "ACCOUNT_NOT_FOUND",
-                "message": f"Account ID {account_id} not found in the system",
-                "details": [],
-            },
-        )
-
-
-class CustomerNotFoundError(HTTPException):
-    """
-    COBOL origin: COACTVWC READ-CUST-BY-CUST-ID RESP=NOTFND.
-    """
-
-    def __init__(self, account_id: int) -> None:
-        super().__init__(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "error_code": "CUSTOMER_NOT_FOUND",
-                "message": f"No customer linked to account ID {account_id}",
-                "details": [],
-            },
-        )
-
-
-class AccountNoChangesDetectedError(HTTPException):
-    """
-    COBOL origin: COACTUPC WS-DATACHANGED-FLAG = 'N' path.
-    Message: 'No changes detected. Nothing to update.'
-    """
-
-    def __init__(self) -> None:
-        super().__init__(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail={
-                "error_code": "NO_CHANGES_DETECTED",
-                "message": "No changes detected. Nothing to update.",
-                "details": [],
-            },
-        )
-
-
-# ---------------------------------------------------------------------------
-# Credit card errors (COCRDLIC / COCRDSLC / COCRDUPC)
-# ---------------------------------------------------------------------------
-
-
-class CardNotFoundError(HTTPException):
-    """
-    COBOL origin: COCRDSLC/COCRDUPC READ DATASET(CARDDAT) RESP=NOTFND.
-    """
-
-    def __init__(self, card_number: str) -> None:
-        super().__init__(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "error_code": "CARD_NOT_FOUND",
-                "message": f"Credit card {card_number} not found in the system",
-                "details": [],
-            },
-        )
-
-
-class CardOptimisticLockError(HTTPException):
-    """
-    COBOL origin: COCRDUPC CCUP-OLD-DETAILS snapshot mismatch.
-    'Record changed by another user.' → SYNCPOINT ROLLBACK → HTTP 409.
-    """
-
-    def __init__(self) -> None:
-        super().__init__(
-            status_code=status.HTTP_409_CONFLICT,
-            detail={
-                "error_code": "OPTIMISTIC_LOCK_CONFLICT",
-                "message": (
-                    "Credit card record was modified by another user. "
-                    "Please refresh and try again."
-                ),
-                "details": [],
-            },
-        )
-
-
-# ---------------------------------------------------------------------------
-# Transaction errors (COTRN00C / COTRN01C / COTRN02C)
-# ---------------------------------------------------------------------------
-
-
-class TransactionNotFoundError(HTTPException):
-    """
-    COBOL origin: COTRN01C PROCESS-ENTER-KEY READ TRANSACT RESP=NOTFND.
-    Message: 'Transaction not found'
-    """
-
-    def __init__(self, transaction_id: str) -> None:
-        super().__init__(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "error_code": "TRANSACTION_NOT_FOUND",
-                "message": f"Transaction ID {transaction_id} not found in the system",
-                "details": [],
-            },
-        )
-
-
-# ---------------------------------------------------------------------------
-# Billing errors (COBIL00C)
-# ---------------------------------------------------------------------------
-
-
-class NothingToPayError(HTTPException):
-    """
-    COBOL origin: COBIL00C PROCESS-ENTER-KEY:
-    IF ACCT-CURR-BAL <= 0: 'You have nothing to pay...' cursor to ACTIDINI
-    """
-
-    def __init__(self, account_id: int) -> None:
-        super().__init__(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail={
-                "error_code": "NOTHING_TO_PAY",
-                "message": f"Account {account_id} has nothing to pay (balance is zero or negative)",
-                "details": [],
-            },
-        )
-
-
-# ---------------------------------------------------------------------------
-# Report errors (CORPT00C)
-# ---------------------------------------------------------------------------
-
-
-class ReportRequestNotFoundError(HTTPException):
-    """
-    No COBOL equivalent — CORPT00C had no status-check capability.
-    New error added for the report status polling feature.
-    """
-
-    def __init__(self, request_id: int) -> None:
-        super().__init__(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "error_code": "REPORT_REQUEST_NOT_FOUND",
-                "message": f"Report request {request_id} not found",
-                "details": [],
-            },
-        )
-
-
-# ---------------------------------------------------------------------------
-# Generic validation error
-# ---------------------------------------------------------------------------
-
-
-class ValidationError(HTTPException):
-    """Generic field validation error."""
-
-    def __init__(self, field: str, message: str) -> None:
-        super().__init__(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail={
-                "error_code": "VALIDATION_ERROR",
-                "message": message,
-                "details": [{"field": field, "message": message}],
-            },
+            error_code="NO_CHANGES_DETECTED",
+            message=(
+                f"No change detected with respect to database values "
+                f"for transaction type '{type_code}'."
+            ),
         )

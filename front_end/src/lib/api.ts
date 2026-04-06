@@ -10,9 +10,25 @@
 
 import axios, { AxiosError } from 'axios';
 import type {
+  AccountUpdateRequest,
+  AccountViewResponse,
   ApiErrorResponse,
+  BillPaymentRequest,
+  BillPaymentResponse,
+  BillingBalanceResponse,
+  CardDetailResponse,
+  CardListParams,
+  CardListResponse,
+  CardUpdateRequest,
   MessageResponse,
   PaginationParams,
+  ReportRequestCreate,
+  ReportRequestResponse,
+  ReportStatusResponse,
+  TransactionCreateRequest,
+  TransactionDetailResponse,
+  TransactionListParams,
+  TransactionListResponse,
   TransactionTypeCreateRequest,
   TransactionTypeListParams,
   TransactionTypeListResponse,
@@ -204,6 +220,207 @@ export async function updateTransactionType(
  */
 export async function deleteTransactionType(typeCode: string): Promise<void> {
   await apiClient.delete(`/transaction-types/${encodeURIComponent(typeCode)}`);
+}
+
+// =============================================================================
+// Account Management API — COACTVWC (view) + COACTUPC (update)
+// =============================================================================
+
+/**
+ * GET /api/v1/accounts/{account_id}
+ * COBOL origin: COACTVWC READ-ACCT-BY-ACCT-ID → READ-CUST-BY-CUST-ID → READ-CARD-BY-ACCT-AIX
+ * Joins three data sources: ACCTDAT + CUSTDAT + CARDAIX.
+ */
+export async function getAccount(accountId: number): Promise<AccountViewResponse> {
+  const resp = await apiClient.get<AccountViewResponse>(`/accounts/${accountId}`);
+  return resp.data;
+}
+
+/**
+ * PUT /api/v1/accounts/{account_id}
+ * COBOL origin: COACTUPC UPDATE-ACCOUNT-INFO (15+ validation rules)
+ * Updates both account and customer fields in a single transaction.
+ */
+export async function updateAccount(
+  accountId: number,
+  data: AccountUpdateRequest
+): Promise<AccountViewResponse> {
+  const resp = await apiClient.put<AccountViewResponse>(`/accounts/${accountId}`, data);
+  return resp.data;
+}
+
+// =============================================================================
+// Credit Card Management API — COCRDLIC (list) + COCRDSLC (view) + COCRDUPC (update)
+// =============================================================================
+
+/**
+ * GET /api/v1/cards
+ * COBOL origin: COCRDLIC POPULATE-USER-DATA (7-row STARTBR/READNEXT/READPREV browse)
+ * Default page_size=7 matches COCRDLIC original display.
+ * Card numbers masked (last 4 digits only) per PCI-DSS.
+ */
+export async function listCards(params: CardListParams = {}): Promise<CardListResponse> {
+  const { account_id, card_number, page = 1, page_size = 7 } = params;
+  const query: Record<string, string | number> = { page, page_size };
+  if (account_id) query.account_id = account_id;
+  if (card_number) query.card_number = card_number;
+
+  const resp = await apiClient.get<CardListResponse>('/cards', { params: query });
+  return resp.data;
+}
+
+/**
+ * GET /api/v1/cards/{card_number}
+ * COBOL origin: COCRDSLC PROCESS-ENTER-KEY → READ DATASET(CARDDAT) RIDFLD(WS-CARD-NUM)
+ * Returns updated_at as optimistic_lock_version for use in PUT request.
+ */
+export async function getCard(cardNumber: string): Promise<CardDetailResponse> {
+  const resp = await apiClient.get<CardDetailResponse>(`/cards/${encodeURIComponent(cardNumber)}`);
+  return resp.data;
+}
+
+/**
+ * PUT /api/v1/cards/{card_number}
+ * COBOL origin: COCRDUPC UPDATE-CARD (7-state machine):
+ *   - Validates embossed name alpha-only (INSPECT CONVERTING)
+ *   - Validates expiry month 1-12, year 1950-2099
+ *   - Checks optimistic lock (CCUP-OLD-DETAILS snapshot)
+ *   - account_id is PROT (NOT updated — cannot be changed)
+ * Returns 409 Conflict if record was modified since last fetch.
+ */
+export async function updateCard(
+  cardNumber: string,
+  data: CardUpdateRequest
+): Promise<CardDetailResponse> {
+  const resp = await apiClient.put<CardDetailResponse>(
+    `/cards/${encodeURIComponent(cardNumber)}`,
+    data
+  );
+  return resp.data;
+}
+
+// =============================================================================
+// Transaction API — COTRN00C (list) + COTRN01C (view) + COTRN02C (add)
+// =============================================================================
+
+/**
+ * GET /api/v1/transactions
+ * COBOL origin: COTRN00C POPULATE-TRAN-DATA (STARTBR/READNEXT browse, 10 rows/page)
+ */
+export async function listTransactions(
+  params: TransactionListParams = {}
+): Promise<TransactionListResponse> {
+  const { page = 1, page_size = 10, tran_id_filter, account_id } = params;
+  const query: Record<string, string | number> = { page, page_size };
+  if (tran_id_filter) query.tran_id_filter = tran_id_filter;
+  if (account_id) query.account_id = account_id;
+
+  const resp = await apiClient.get<TransactionListResponse>('/transactions', {
+    params: query,
+  });
+  return resp.data;
+}
+
+/**
+ * GET /api/v1/transactions/{transaction_id}
+ * COBOL origin: COTRN01C PROCESS-ENTER-KEY → READ TRANSACT by TRNIDINI
+ * Bug fix: original used READ UPDATE (exclusive lock) — modern uses plain SELECT.
+ */
+export async function getTransaction(
+  transactionId: string
+): Promise<TransactionDetailResponse> {
+  const resp = await apiClient.get<TransactionDetailResponse>(
+    `/transactions/${encodeURIComponent(transactionId)}`
+  );
+  return resp.data;
+}
+
+/**
+ * GET /api/v1/transactions/last
+ * COBOL origin: COTRN02C PF5 COPY-LAST-TRAN-DATA — pre-fills form with last transaction.
+ */
+export async function getLastTransaction(): Promise<TransactionDetailResponse | null> {
+  try {
+    const resp = await apiClient.get<TransactionDetailResponse>('/transactions/last');
+    return resp.data;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * POST /api/v1/transactions
+ * COBOL origin: COTRN02C ADD-TRANSACTION (after CONFIRMI='Y' gate)
+ * Race condition fix: ID generated via PostgreSQL sequence, not STARTBR/READPREV/ADD-1.
+ */
+export async function createTransaction(
+  data: TransactionCreateRequest
+): Promise<TransactionDetailResponse> {
+  const resp = await apiClient.post<TransactionDetailResponse>('/transactions', data);
+  return resp.data;
+}
+
+// =============================================================================
+// Billing API — COBIL00C (CBIL0A BMS map)
+// Two-phase: Phase 1 = GET balance (read-only), Phase 2 = POST payment
+// =============================================================================
+
+/**
+ * GET /api/v1/billing/{account_id}/balance
+ * COBOL origin: COBIL00C Phase 1 — READ-ACCTDAT-FILE → display ACCT-CURR-BAL.
+ * Plain SELECT — no lock (COBIL00C only acquired lock before payment).
+ */
+export async function getBillingBalance(
+  accountId: number
+): Promise<BillingBalanceResponse> {
+  const resp = await apiClient.get<BillingBalanceResponse>(
+    `/billing/${accountId}/balance`
+  );
+  return resp.data;
+}
+
+/**
+ * POST /api/v1/billing/{account_id}/payment
+ * COBOL origin: COBIL00C CONF-PAY-YES:
+ *   SELECT FOR UPDATE → WRITE TRANSACT → COMPUTE ACCT-CURR-BAL = 0 → REWRITE ACCTDAT
+ * confirm='Y' required (CONFIRMI gate).
+ */
+export async function processPayment(
+  accountId: number,
+  data: BillPaymentRequest
+): Promise<BillPaymentResponse> {
+  const resp = await apiClient.post<BillPaymentResponse>(
+    `/billing/${accountId}/payment`,
+    data
+  );
+  return resp.data;
+}
+
+// =============================================================================
+// Reports API — CORPT00C (CRPT0A BMS map)
+// COBOL origin: CORPT00C WRITEQ TD QUEUE='JOBS' → DB record + background task
+// =============================================================================
+
+/**
+ * POST /api/v1/reports/request
+ * COBOL origin: CORPT00C PROCESS-ENTER-KEY → WIRTE-JOBSUB-TDQ
+ * Returns 202 Accepted — report generated asynchronously.
+ */
+export async function requestReport(
+  data: ReportRequestCreate
+): Promise<ReportRequestResponse> {
+  const resp = await apiClient.post<ReportRequestResponse>('/reports/request', data);
+  return resp.data;
+}
+
+/**
+ * GET /api/v1/reports/{report_id}
+ * No COBOL equivalent — new status polling capability.
+ * Replaces the lack of status visibility in original TDQ-based submission.
+ */
+export async function getReportStatus(reportId: number): Promise<ReportStatusResponse> {
+  const resp = await apiClient.get<ReportStatusResponse>(`/reports/${reportId}`);
+  return resp.data;
 }
 
 export { extractError };
