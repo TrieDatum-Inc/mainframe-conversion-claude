@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from app.config import settings
 from app.database import Base
-from app.models import User  # noqa: F401 — register metadata
+from app.models import Account, Card, CardXref, Customer, User  # noqa: F401 — register metadata
 
 config = context.config
 config.set_main_option("sqlalchemy.url", settings.database_url)
