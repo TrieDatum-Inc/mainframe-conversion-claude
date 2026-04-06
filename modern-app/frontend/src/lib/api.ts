@@ -7,13 +7,19 @@
  */
 
 import type {
+  AccountDetail,
+  AccountUpdateRequest,
   ApiError,
+  CardDetail,
+  CardUpdateRequest,
   CreateCategoryRequest,
   CreateTransactionTypeRequest,
   InlineSaveRequest,
   InlineSaveResponse,
   LoginRequest,
   LoginResponse,
+  PaginatedAccounts,
+  PaginatedCards,
   PaginatedTransactionTypes,
   TransactionTypeCategory,
   TransactionTypeDetail,
@@ -77,7 +83,102 @@ class ApiClient {
     });
     return this.handleResponse<User>(response);
   }
-}
+
+  // -------------------------------------------------------------------------
+  // Account endpoints (COACTVWC view, COACTUPC update)
+  // -------------------------------------------------------------------------
+
+  /** GET /api/accounts — paginated list with optional account_id filter */
+  async listAccounts(
+    token: string,
+    params?: { account_id?: string; page?: number; page_size?: number }
+  ): Promise<PaginatedAccounts> {
+    const url = new URL(`${BASE_URL}/accounts`, window.location.origin);
+    if (params?.account_id) url.searchParams.set("account_id", params.account_id);
+    if (params?.page) url.searchParams.set("page", String(params.page));
+    if (params?.page_size) url.searchParams.set("page_size", String(params.page_size));
+    const response = await fetch(url.toString(), {
+      headers: this.getAuthHeaders(token),
+    });
+    return this.handleResponse<PaginatedAccounts>(response);
+  }
+
+  /** GET /api/accounts/{account_id} — full detail with customer + cards */
+  async getAccount(token: string, accountId: string): Promise<AccountDetail> {
+    const response = await fetch(
+      `${BASE_URL}/accounts/${encodeURIComponent(accountId)}`,
+      { headers: this.getAuthHeaders(token) }
+    );
+    return this.handleResponse<AccountDetail>(response);
+  }
+
+  /** PUT /api/accounts/{account_id} — update account and customer fields */
+  async updateAccount(
+    token: string,
+    accountId: string,
+    body: AccountUpdateRequest
+  ): Promise<AccountDetail> {
+    const response = await fetch(
+      `${BASE_URL}/accounts/${encodeURIComponent(accountId)}`,
+      {
+        method: "PUT",
+        headers: this.getAuthHeaders(token),
+        body: JSON.stringify(body),
+      }
+    );
+    return this.handleResponse<AccountDetail>(response);
+  }
+
+  // -------------------------------------------------------------------------
+  // Card endpoints (COCRDLIC list, COCRDSLC view, COCRDUPC update)
+  // -------------------------------------------------------------------------
+
+  /** GET /api/cards — paginated list (7 per page), optional account/card filters */
+  async listCards(
+    token: string,
+    params?: {
+      account_id?: string;
+      card_number?: string;
+      page?: number;
+      page_size?: number;
+    }
+  ): Promise<PaginatedCards> {
+    const url = new URL(`${BASE_URL}/cards`, window.location.origin);
+    if (params?.account_id) url.searchParams.set("account_id", params.account_id);
+    if (params?.card_number) url.searchParams.set("card_number", params.card_number);
+    if (params?.page) url.searchParams.set("page", String(params.page));
+    if (params?.page_size) url.searchParams.set("page_size", String(params.page_size));
+    const response = await fetch(url.toString(), {
+      headers: this.getAuthHeaders(token),
+    });
+    return this.handleResponse<PaginatedCards>(response);
+  }
+
+  /** GET /api/cards/{card_number} — full card detail (COCRDSLC READ CARDDAT) */
+  async getCard(token: string, cardNumber: string): Promise<CardDetail> {
+    const response = await fetch(
+      `${BASE_URL}/cards/${encodeURIComponent(cardNumber)}`,
+      { headers: this.getAuthHeaders(token) }
+    );
+    return this.handleResponse<CardDetail>(response);
+  }
+
+  /** PUT /api/cards/{card_number} — update editable fields (COCRDUPC REWRITE) */
+  async updateCard(
+    token: string,
+    cardNumber: string,
+    body: CardUpdateRequest
+  ): Promise<CardDetail> {
+    const response = await fetch(
+      `${BASE_URL}/cards/${encodeURIComponent(cardNumber)}`,
+      {
+        method: "PUT",
+        headers: this.getAuthHeaders(token),
+        body: JSON.stringify(body),
+      }
+    );
+    return this.handleResponse<CardDetail>(response);
+  }
 
   // -------------------------------------------------------------------------
   // Transaction Type endpoints (admin-only, mirrors COTRTLIC / COTRTUPC)
