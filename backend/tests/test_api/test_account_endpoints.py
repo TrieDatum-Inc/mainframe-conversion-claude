@@ -7,6 +7,8 @@ Tests GET /api/v1/accounts/{id} and PUT /api/v1/accounts/{id}.
 import pytest
 from httpx import AsyncClient
 
+from datetime import datetime, timezone
+
 from app.models.account import Account
 from app.models.account_customer_xref import AccountCustomerXref
 from app.models.customer import Customer
@@ -67,10 +69,12 @@ class TestUpdateAccount:
         sample_customer: Customer,
     ):
         # Send request with same values as existing data
+        lock_version = sample_account.updated_at.isoformat()
         resp = await client.put(
             f"/api/v1/accounts/{sample_account.account_id}",
             headers=user_headers,
             json={
+                "optimistic_lock_version": lock_version,
                 "active_status": "Y",  # same as existing
                 "customer": {
                     "first_name": "John",     # same as existing
@@ -91,10 +95,12 @@ class TestUpdateAccount:
         sample_account: Account,
         sample_customer: Customer,
     ):
+        lock_version = sample_account.updated_at.isoformat()
         resp = await client.put(
             f"/api/v1/accounts/{sample_account.account_id}",
             headers=user_headers,
             json={
+                "optimistic_lock_version": lock_version,
                 "active_status": "N",  # changed
                 "customer": {
                     "first_name": "John",
@@ -107,6 +113,50 @@ class TestUpdateAccount:
         assert data["active_status"] == "N"
 
     @pytest.mark.asyncio
+    async def test_update_optimistic_lock_conflict_returns_409(
+        self,
+        client: AsyncClient,
+        user_headers: dict,
+        sample_account_customer_xref,
+        sample_account: Account,
+        sample_customer: Customer,
+    ):
+        # Use a stale timestamp (well in the past)
+        stale_version = "2020-01-01T00:00:00"
+        resp = await client.put(
+            f"/api/v1/accounts/{sample_account.account_id}",
+            headers=user_headers,
+            json={
+                "optimistic_lock_version": stale_version,
+                "active_status": "N",
+                "customer": {"first_name": "John", "last_name": "Doe"},
+            },
+        )
+        assert resp.status_code == 409
+        data = resp.json()
+        assert data["detail"]["error_code"] == "OPTIMISTIC_LOCK_ERROR"
+
+    @pytest.mark.asyncio
+    async def test_update_missing_lock_version_returns_422(
+        self,
+        client: AsyncClient,
+        user_headers: dict,
+        sample_account_customer_xref,
+        sample_account: Account,
+        sample_customer: Customer,
+    ):
+        # omitting optimistic_lock_version should fail Pydantic validation
+        resp = await client.put(
+            f"/api/v1/accounts/{sample_account.account_id}",
+            headers=user_headers,
+            json={
+                "active_status": "N",
+                "customer": {"first_name": "John", "last_name": "Doe"},
+            },
+        )
+        assert resp.status_code == 422
+
+    @pytest.mark.asyncio
     async def test_update_rejects_invalid_ssn_000(
         self,
         client: AsyncClient,
@@ -116,6 +166,7 @@ class TestUpdateAccount:
             "/api/v1/accounts/100001",
             headers=user_headers,
             json={
+                "optimistic_lock_version": "2026-01-01T00:00:00",
                 "customer": {
                     "first_name": "John",
                     "last_name": "Doe",
@@ -138,8 +189,30 @@ class TestUpdateAccount:
             "/api/v1/accounts/100001",
             headers=user_headers,
             json={
+                "optimistic_lock_version": "2026-01-01T00:00:00",
                 "credit_limit": 1000,
                 "cash_credit_limit": 9999,  # exceeds credit_limit
+                "customer": {"first_name": "John", "last_name": "Doe"},
+            },
+        )
+        assert resp.status_code == 422
+
+    @pytest.mark.asyncio
+    async def test_update_rejects_invalid_date_format(
+        self,
+        client: AsyncClient,
+        user_headers: dict,
+        sample_account_customer_xref,
+        sample_account: Account,
+        sample_customer: Customer,
+    ):
+        lock_version = sample_account.updated_at.isoformat()
+        resp = await client.put(
+            f"/api/v1/accounts/{sample_account.account_id}",
+            headers=user_headers,
+            json={
+                "optimistic_lock_version": lock_version,
+                "open_date": "not-a-date",  # invalid
                 "customer": {"first_name": "John", "last_name": "Doe"},
             },
         )

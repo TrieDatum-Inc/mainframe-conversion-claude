@@ -8,11 +8,14 @@ SSN masking, change detection, validation rules.
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 
-from app.exceptions.errors import NoChangesDetectedError, NotFoundError
+from datetime import datetime, timezone
+
+from app.exceptions.errors import NoChangesDetectedError, NotFoundError, OptimisticLockError
 from app.services.account_service import (
     _mask_ssn,
     _apply_account_changes,
     _apply_customer_changes,
+    _check_optimistic_lock,
     view_account,
     update_account,
 )
@@ -207,6 +210,7 @@ class TestCashLimitValidation:
         from app.schemas.account import AccountUpdateRequest, CustomerUpdateRequest
         with pytest.raises(Exception):
             AccountUpdateRequest(
+                optimistic_lock_version="2026-01-01T00:00:00",
                 credit_limit=1000,
                 cash_credit_limit=2000,  # exceeds credit_limit
                 customer=CustomerUpdateRequest(first_name="John", last_name="Doe"),
@@ -215,8 +219,75 @@ class TestCashLimitValidation:
     def test_equal_cash_and_credit_limit_passes(self):
         from app.schemas.account import AccountUpdateRequest, CustomerUpdateRequest
         req = AccountUpdateRequest(
+            optimistic_lock_version="2026-01-01T00:00:00",
             credit_limit=1000,
             cash_credit_limit=1000,
             customer=CustomerUpdateRequest(first_name="John", last_name="Doe"),
         )
         assert req.cash_credit_limit == req.credit_limit
+
+
+# =============================================================================
+# Optimistic lock — COACTUPC concurrent update protection
+# =============================================================================
+
+class TestOptimisticLock:
+    def test_matching_timestamp_passes(self):
+        account = MagicMock()
+        ts = datetime(2026, 1, 15, 10, 30, 0, tzinfo=timezone.utc)
+        account.updated_at = ts
+        # Should not raise
+        _check_optimistic_lock(account, "2026-01-15T10:30:00+00:00")
+
+    def test_stale_timestamp_raises_optimistic_lock_error(self):
+        account = MagicMock()
+        account.updated_at = datetime(2026, 1, 15, 10, 30, 0, tzinfo=timezone.utc)
+        with pytest.raises(OptimisticLockError):
+            _check_optimistic_lock(account, "2020-01-01T00:00:00")
+
+    def test_invalid_timestamp_raises_optimistic_lock_error(self):
+        account = MagicMock()
+        account.updated_at = datetime(2026, 1, 15, 10, 30, 0, tzinfo=timezone.utc)
+        with pytest.raises(OptimisticLockError):
+            _check_optimistic_lock(account, "not-a-timestamp")
+
+    def test_microseconds_truncated_for_iso_roundtrip(self):
+        """ISO string round-trip drops sub-second precision — truncation must match."""
+        account = MagicMock()
+        # stored timestamp with microseconds
+        account.updated_at = datetime(2026, 1, 15, 10, 30, 0, 999999, tzinfo=timezone.utc)
+        # client sends back the ISO string without microseconds
+        _check_optimistic_lock(account, "2026-01-15T10:30:00+00:00")
+
+
+# =============================================================================
+# Date validation — AccountUpdateRequest field_validator
+# =============================================================================
+
+class TestAccountUpdateRequestDateValidation:
+    def test_valid_date_passes(self):
+        from app.schemas.account import AccountUpdateRequest, CustomerUpdateRequest
+        req = AccountUpdateRequest(
+            optimistic_lock_version="2026-01-01T00:00:00",
+            open_date="2026-03-15",
+            customer=CustomerUpdateRequest(first_name="John", last_name="Doe"),
+        )
+        assert req.open_date == "2026-03-15"
+
+    def test_invalid_date_raises_validation_error(self):
+        from app.schemas.account import AccountUpdateRequest, CustomerUpdateRequest
+        with pytest.raises(Exception):
+            AccountUpdateRequest(
+                optimistic_lock_version="2026-01-01T00:00:00",
+                open_date="not-a-date",
+                customer=CustomerUpdateRequest(first_name="John", last_name="Doe"),
+            )
+
+    def test_none_date_is_accepted(self):
+        from app.schemas.account import AccountUpdateRequest, CustomerUpdateRequest
+        req = AccountUpdateRequest(
+            optimistic_lock_version="2026-01-01T00:00:00",
+            open_date=None,
+            customer=CustomerUpdateRequest(first_name="John", last_name="Doe"),
+        )
+        assert req.open_date is None

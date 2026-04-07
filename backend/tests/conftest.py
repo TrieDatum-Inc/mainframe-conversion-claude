@@ -4,6 +4,14 @@ pytest fixtures for the CardDemo backend test suite.
 Uses SQLite in-memory for fast tests (no external PostgreSQL required).
 """
 
+import os
+
+# Set required env vars before any app module is imported.
+# JWT_SECRET_KEY has no default in config.py (security requirement) so tests
+# must provide a deterministic test-only secret here.
+os.environ.setdefault("JWT_SECRET_KEY", "carddemo-test-secret-not-for-production")
+os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
+
 import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
