@@ -31,6 +31,7 @@ Parameters (replaces JCL PARM):
                Used as PARM-DATE prefix in generated TRAN-IDs.
 """
 
+import re
 import sys
 import traceback
 from datetime import datetime, timezone
@@ -60,6 +61,27 @@ from .transaction_writer import (
 from .timestamp_utils import get_db2_format_timestamp
 
 
+def _sanitize_error_message(message: str) -> str:
+    """
+    Strip potential PII from error messages before persisting to pipeline_metrics.
+
+    Account IDs (PIC 9(11) — 11-digit sequences) and monetary balance values
+    (decimal numbers with 2 d.p., e.g. '12345678.99') can appear in PySpark
+    exception messages when assertion failures include row values.  Redact them
+    so that carddemo.migration_ctrl.pipeline_metrics does not become a source of
+    account-level financial data.
+
+    Replacement tokens are chosen to remain informative for ops triage:
+      - 11+ consecutive digits → [ACCT_ID_REDACTED]
+      - Decimal monetary values (up to 12 digits before '.', exactly 2 after) → [AMOUNT_REDACTED]
+    """
+    # Redact account IDs: 11 or more consecutive digits (PIC 9(11) and wider)
+    message = re.sub(r"\b\d{11,}\b", "[ACCT_ID_REDACTED]", message)
+    # Redact monetary amounts: up to 12 digits, decimal point, exactly 2 digits
+    message = re.sub(r"\b\d{1,12}\.\d{2}\b", "[AMOUNT_REDACTED]", message)
+    return message
+
+
 def get_run_date(spark: SparkSession) -> str:
     """
     Retrieve run_date from Databricks widget or environment.
@@ -77,10 +99,14 @@ def get_run_date(spark: SparkSession) -> str:
         ValueError: If run_date is empty or invalid.
     """
     try:
-        # dbutils is injected by Databricks runtime
+        # dbutils is injected by Databricks runtime; AttributeError is raised in
+        # local/test mode where spark._jvm is absent or dbutils is not present.
+        # Only AttributeError is caught here so that genuine widget value errors
+        # (e.g., widget not configured) propagate and fail fast instead of silently
+        # falling back to today's date with the wrong processing date.
         dbutils = spark._jvm.com.databricks.dbutils  # type: ignore[attr-defined]
         run_date = dbutils.widgets.get("run_date")
-    except Exception:
+    except AttributeError:
         # Fallback for local/test execution: check sys.argv or use today's date
         if len(sys.argv) > 1:
             run_date = sys.argv[1]
@@ -310,6 +336,11 @@ def run_pipeline(spark: SparkSession, run_date: str, pipeline_run_id: str) -> in
         print(f"[{SOURCE_PROGRAM}] PIPELINE FAILED: {error_msg}", file=sys.stderr)
 
         try:
+            # Sanitize before persisting: strip account IDs and monetary values that
+            # may appear in assertion failure messages (e.g. assert_tran_id_uniqueness,
+            # assert_balance_integrity) to prevent PII from being stored in
+            # migration_ctrl.pipeline_metrics.
+            sanitized_error_msg = _sanitize_error_message(error_msg)
             write_pipeline_metrics(
                 spark,
                 pipeline_run_id=pipeline_run_id,
@@ -320,7 +351,7 @@ def run_pipeline(spark: SparkSession, run_date: str, pipeline_run_id: str) -> in
                 transactions_written=transactions_written,
                 gold_rows=gold_rows,
                 status="FAILED",
-                error_message=error_msg[:2000],  # truncate for storage
+                error_message=sanitized_error_msg[:2000],  # truncate for storage
             )
         except Exception:  # noqa: BLE001
             pass  # Do not mask original exception with metrics write failure

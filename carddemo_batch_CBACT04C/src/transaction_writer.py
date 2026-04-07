@@ -13,7 +13,7 @@ One interest transaction record is generated per account (not per category).
 from datetime import datetime, timezone
 
 from delta.tables import DeltaTable
-from pyspark.sql import DataFrame, SparkSession
+from pyspark.sql import DataFrame, SparkSession, Window
 from pyspark.sql import functions as F
 from pyspark.sql.types import DecimalType, IntegerType, LongType, StringType
 
@@ -99,10 +99,17 @@ def build_interest_transactions(
     # COBOL: on INVALID KEY → DISPLAY warning and continue (tran_card_num stays as spaces)
     with_xref = account_interest_df.join(xref_df, on="acct_id", how="left")
 
-    # Assign a monotonic sequence number per row for TRAN-ID suffix
+    # Assign a 1-based sequential row number for TRAN-ID suffix.
     # Replaces: ADD 1 TO WS-TRANID-SUFFIX in 1300-B-WRITE-TX
-    # monotonically_increasing_id() is non-deterministic but unique within the run.
-    with_seq = with_xref.withColumn("_seq_id", F.monotonically_increasing_id())
+    #
+    # row_number() over Window.orderBy("acct_id") produces a compact 1-N integer,
+    # guaranteed to fit within TRAN_ID_SUFFIX_DIGITS (6) for any realistic batch size.
+    # monotonically_increasing_id() was rejected because it encodes partition offsets
+    # into the high bits of a 64-bit integer — values like 8589934592 exceed 6 digits
+    # on multi-partition DataFrames and cause assert_tran_id_uniqueness to fail when
+    # lpad silently truncates the string, producing collisions.
+    _seq_window = Window.orderBy("acct_id")
+    with_seq = with_xref.withColumn("_seq_id", F.row_number().over(_seq_window))
 
     # Build all TRAN-RECORD fields
     transactions_df = (
