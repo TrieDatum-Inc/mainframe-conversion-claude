@@ -1,0 +1,132 @@
+# =============================================================================
+# CBACT04C Databricks Workflow Task Definition
+# =============================================================================
+# Job Name:   cbact04c_interest_calc
+# JCL Source: INTCALC.jcl
+# Cycle:      Daily (step 5 in carddemo_daily_batch_cycle workflow)
+#
+# This task is not a standalone workflow — it is embedded as a task within the
+# carddemo_daily_batch_cycle workflow. The full workflow YAML is defined in:
+#   tech_specs/target-modern-stack/13-workflow-orchestration-specification.md
+#
+# JCL-to-Databricks concept mapping:
+#   JCL JOB INTCALC        → Databricks Workflow: carddemo_daily_batch_cycle
+#   JCL EXEC PGM=CBACT04C  → Databricks Task: cbact04c_interest_calc (this file)
+#   JCL PARM='YYYY-MM-DD'  → Databricks widget: run_date
+#   JCL COND=(0,NE)        → run_if: ALL_SUCCESS (depends_on posttran task)
+#   JCL SYSOUT             → Databricks job run logs (stdout)
+# =============================================================================
+
+# Task definition block (embedded in carddemo_daily_batch_cycle workflow)
+tasks:
+  - task_key: cbact04c_interest_calc
+    description: >
+      Interest Calculation Pipeline (CBACT04C).
+      Reads TCATBALF, looks up rates from DISCGRP, computes monthly interest,
+      generates interest transactions in silver.transaction, and updates
+      account balances in silver.account.
+      Replaces JCL INTCALC.jcl running COBOL program CBACT04C.
+
+    # Depends on: POSTTRAN (CBTRN02C daily transaction posting)
+    # JCL equivalent: INTCALC.jcl runs after POSTTRAN.jcl in the daily job stream
+    depends_on:
+      - task_key: posttran_cbtrn02c
+
+    # Only run if POSTTRAN succeeded (JCL: no explicit COND = default "run if previous OK")
+    run_if: ALL_SUCCESS
+
+    python_wheel_task:
+      package_name: cbact04c
+      entry_point: cbact04c.src.pipeline:main
+      # Alternative: python_file task pointing to pipeline.py if not wheel-packaged
+      # python_file: /carddemo_batch_CBACT04C/src/pipeline.py
+
+    # Parameters (replaces JCL PARM='{{run_date}}')
+    # Databricks widget: dbutils.widgets.get("run_date")
+    parameters:
+      - name: run_date
+        default: ""
+        # Populated by the workflow with the current business date:
+        # e.g., "{{job.parameters.business_date}}" set at workflow level
+
+    # Cluster: reuse the daily batch job cluster (auto-terminated after workflow)
+    # Defined at workflow level; task inherits job cluster named "daily_batch_cluster"
+    job_cluster_key: daily_batch_cluster
+
+    # Retry policy
+    # JCL equivalent: no automatic retry in original JCL; one attempt is standard
+    max_retries: 1
+    min_retry_interval_millis: 60000   # 1 minute between retries
+    retry_on_timeout: false
+
+    # Timeout: interest calculation should complete within 30 minutes for production volumes
+    timeout_seconds: 1800
+
+    # Libraries required
+    libraries:
+      - pypi:
+          package: delta-spark>=3.0.0
+      - pypi:
+          package: pyspark>=3.5.0
+
+---
+# =============================================================================
+# Standalone job definition (for running CBACT04C independently, e.g. backfill)
+# =============================================================================
+
+standalone_job:
+  name: cbact04c_interest_calc_standalone
+  description: >
+    Standalone execution of CBACT04C Interest Calculation Pipeline.
+    Use for backfill runs or re-processing a specific run_date.
+    In normal operations, use the carddemo_daily_batch_cycle workflow instead.
+
+  tags:
+    program: CBACT04C
+    cycle: daily
+    environment: prod
+    migrated_from: JCL_INTCALC
+
+  # Run parameters (replaces JCL PARM)
+  parameters:
+    - name: run_date
+      default: ""
+      # Format: YYYY-MM-DD (e.g., "2026-04-07")
+      # Required — pipeline will use today's date as fallback if blank
+
+  # Job cluster (auto-terminated after run)
+  job_clusters:
+    - job_cluster_key: cbact04c_cluster
+      new_cluster:
+        spark_version: "14.3.x-scala2.12"
+        node_type_id: "i3.xlarge"          # adjust for production volumes
+        num_workers: 2
+        spark_conf:
+          spark.sql.extensions: "io.delta.sql.DeltaSparkSessionExtension"
+          spark.sql.catalog.spark_catalog: "org.apache.spark.sql.delta.catalog.DeltaCatalog"
+          spark.databricks.delta.optimizeWrite.enabled: "true"
+          spark.databricks.delta.autoCompact.enabled: "true"
+        spark_env_vars:
+          ENVIRONMENT: "prod"
+
+  tasks:
+    - task_key: cbact04c_interest_calc
+      python_wheel_task:
+        package_name: cbact04c
+        entry_point: cbact04c.src.pipeline:main
+      parameters:
+        - name: run_date
+          default: "{{job.parameters.run_date}}"
+      job_cluster_key: cbact04c_cluster
+      max_retries: 1
+      min_retry_interval_millis: 60000
+      timeout_seconds: 1800
+      libraries:
+        - pypi:
+            package: delta-spark>=3.0.0
+
+  # Email notification on failure (replaces JCL NOTIFY= parameter)
+  email_notifications:
+    on_failure:
+      - batch-ops@carddemo.internal
+    on_success: []
