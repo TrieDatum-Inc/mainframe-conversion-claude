@@ -188,6 +188,7 @@ def run_pipeline(spark: SparkSession, run_date: str, pipeline_run_id: str) -> in
     accounts_not_found = 0
     transactions_written = 0
     gold_rows = 0
+    return_code = 0
 
     try:
         print(f"[{SOURCE_PROGRAM}] Starting interest calculation pipeline. run_date={run_date}")
@@ -206,7 +207,7 @@ def run_pipeline(spark: SparkSession, run_date: str, pipeline_run_id: str) -> in
                 tcatbal_rows=0, accounts_processed=0, accounts_not_found=0,
                 transactions_written=0, gold_rows=0, status="SUCCESS_NO_DATA",
             )
-            return 0
+            return return_code
 
         # -----------------------------------------------------------------------
         # Step 2: Load reference tables for joining
@@ -218,6 +219,9 @@ def run_pipeline(spark: SparkSession, run_date: str, pipeline_run_id: str) -> in
         # Step 3: Join interest rates (1200-GET-INTEREST-RATE + 1200-A fallback)
         # -----------------------------------------------------------------------
         tcatbal_with_rate_df = join_interest_rates(tcatbal_df, acct_df, discgrp_df)
+
+        # Cache: tcatbal_with_rate_df is scanned twice (no-rate count + compute_monthly_interest)
+        tcatbal_with_rate_df = tcatbal_with_rate_df.cache()
 
         # Log categories with no rate at all (warning, not abend)
         no_rate_count = tcatbal_with_rate_df.filter(
@@ -234,10 +238,18 @@ def run_pipeline(spark: SparkSession, run_date: str, pipeline_run_id: str) -> in
         # -----------------------------------------------------------------------
         interest_df = compute_monthly_interest(tcatbal_with_rate_df)
 
+        # Cache: interest_df feeds aggregate_account_interest and write_gold_interest_charges
+        interest_df = interest_df.cache()
+
         # -----------------------------------------------------------------------
         # Step 5: Aggregate to account level (1050-UPDATE-ACCOUNT accumulation)
         # -----------------------------------------------------------------------
         account_interest_df = aggregate_account_interest(interest_df)
+
+        # Cache: account_interest_df is used in build_interest_transactions,
+        # update_account_balances, assert_balance_integrity, and write_gold_interest_charges
+        account_interest_df = account_interest_df.cache()
+
         accounts_with_interest = account_interest_df.count()
         print(f"[{SOURCE_PROGRAM}] Accounts with non-zero interest: {accounts_with_interest}")
 
@@ -248,7 +260,7 @@ def run_pipeline(spark: SparkSession, run_date: str, pipeline_run_id: str) -> in
                 tcatbal_rows=tcatbal_rows, accounts_processed=0, accounts_not_found=0,
                 transactions_written=0, gold_rows=0, status="SUCCESS_NO_INTEREST",
             )
-            return 0
+            return return_code
 
         # -----------------------------------------------------------------------
         # Step 6: Build interest transaction records (1300-B-WRITE-TX)
@@ -257,6 +269,10 @@ def run_pipeline(spark: SparkSession, run_date: str, pipeline_run_id: str) -> in
         transactions_df = build_interest_transactions(
             account_interest_df, xref_df, run_date, pipeline_run_id
         )
+
+        # Cache: transactions_df is used in assert_tran_id_uniqueness,
+        # write_interest_transactions, assert_balance_integrity, and write_gold_interest_charges
+        transactions_df = transactions_df.cache()
 
         # Log missing XREF (warning, not abend — matches COBOL INVALID KEY handling)
         missing_xref = transactions_df.filter(
@@ -329,7 +345,7 @@ def run_pipeline(spark: SparkSession, run_date: str, pipeline_run_id: str) -> in
         )
 
         print(f"[{SOURCE_PROGRAM}] Pipeline completed successfully.")
-        return 0
+        return return_code
 
     except Exception as exc:  # noqa: BLE001
         error_msg = f"{type(exc).__name__}: {exc}\n{traceback.format_exc()}"
@@ -366,7 +382,12 @@ def main() -> None:
     Databricks invokes this via the Python script task type.
     Return code is communicated via dbutils.notebook.exit() for workflow conditional tasks.
     """
-    spark = SparkSession.builder.appName(DATABRICKS_JOB_NAME).getOrCreate()
+    spark = (
+        SparkSession.builder
+        .master("local[*]")
+        .appName(DATABRICKS_JOB_NAME)
+        .getOrCreate()
+    )
 
     # Retrieve pipeline run ID from Databricks runtime context
     try:

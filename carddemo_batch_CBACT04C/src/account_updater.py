@@ -53,11 +53,12 @@ def update_account_balances(
     """
     target_table = DeltaTable.forName(spark, "carddemo.silver.account")
 
-    # Prepare source with only the columns needed for the MERGE condition and SET clauses
+    # Prepare source with only the columns needed for the MERGE condition and SET clauses.
+    # Persist to avoid recomputing the DataFrame for both the MERGE and the count queries.
     source_df = account_interest_df.select(
         F.col("acct_id"),
         F.col("total_interest").cast(DecimalType(12, 2)).alias("total_interest"),
-    )
+    ).persist()
 
     (
         target_table.alias("target")
@@ -67,13 +68,9 @@ def update_account_balances(
         )
         .whenMatchedUpdate(
             set={
-                # ACCT-CURR-BAL += WS-TOTAL-INT
                 "acct_curr_bal": "CAST(target.acct_curr_bal + source.total_interest AS DECIMAL(12,2))",
-                # MOVE ZEROS TO ACCT-CURR-CYC-CREDIT
                 "acct_curr_cyc_credit": "CAST(0 AS DECIMAL(12,2))",
-                # MOVE ZEROS TO ACCT-CURR-CYC-DEBIT
                 "acct_curr_cyc_debit": "CAST(0 AS DECIMAL(12,2))",
-                # Silver audit timestamp
                 "_silver_last_updated_ts": "CURRENT_TIMESTAMP()",
             }
         )
@@ -89,6 +86,7 @@ def update_account_balances(
         .count()
     )
     accounts_not_found = accounts_in_tcatbal - accounts_in_silver
+    source_df.unpersist()
 
     return accounts_in_silver, accounts_not_found
 

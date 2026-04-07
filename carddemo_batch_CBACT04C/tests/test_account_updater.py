@@ -207,5 +207,4 @@ class TestAccountUpdateLogic:
             )
             .collect()
         )
-        # -50.00 + 10.00 = -40.00
-        assert result[0]["new_bal"] == Decimal("-40.00")
+        assert result[0]["new_bal"] == Decimal("-40.00"), "Expected -50.00 + 10.00 = -40.00"

@@ -105,7 +105,7 @@ class TestFullPipeline:
         End-to-end: one account, one category, primary rate found.
         balance=1200.00, rate=12.0000 → monthly_interest=12.00 → tran_amt=12.00
         """
-        interest_df, account_interest_df, transactions_df = self._run_pipeline(
+        _, _, transactions_df = self._run_pipeline(
             spark,
             tcatbal_rows=[
                 Row(acct_id=1, tran_type_cd="01", tran_cat_cd=1,
@@ -137,7 +137,7 @@ class TestFullPipeline:
         One account, three categories: interests accumulate into one transaction record.
         category totals: 12.00 + 24.00 + 9.00 = 45.00 → single tran_amt=45.00
         """
-        interest_df, account_interest_df, transactions_df = self._run_pipeline(
+        _, _, transactions_df = self._run_pipeline(
             spark,
             tcatbal_rows=[
                 Row(acct_id=1, tran_type_cd="01", tran_cat_cd=1, tran_cat_bal=Decimal("1200.00")),
@@ -161,13 +161,12 @@ class TestFullPipeline:
         )
 
         tran_rows = transactions_df.collect()
-        assert len(tran_rows) == 1  # one transaction per account
-        # 12 + 24 + 9 = 45.00
+        assert len(tran_rows) == 1  # one transaction per account (cat1: 12.00 + cat2: 24.00 + cat3: 9.00 = 45.00)
         assert tran_rows[0]["tran_amt"] == Decimal("45.00")
 
     def test_multiple_accounts_each_gets_one_transaction(self, spark):
         """Three accounts → three separate interest transactions."""
-        interest_df, account_interest_df, transactions_df = self._run_pipeline(
+        _, account_interest_df, transactions_df = self._run_pipeline(
             spark,
             tcatbal_rows=[
                 Row(acct_id=1, tran_type_cd="01", tran_cat_cd=1, tran_cat_bal=Decimal("1200.00")),
@@ -202,7 +201,7 @@ class TestFullPipeline:
         BR-3: Account with one zero-rate category and one non-zero category.
         Only the non-zero category contributes to the transaction amount.
         """
-        interest_df, account_interest_df, transactions_df = self._run_pipeline(
+        _, _, transactions_df = self._run_pipeline(
             spark,
             tcatbal_rows=[
                 Row(acct_id=1, tran_type_cd="01", tran_cat_cd=1, tran_cat_bal=Decimal("1200.00")),
@@ -230,7 +229,7 @@ class TestFullPipeline:
         """
         All categories have zero rate → no transactions generated, no account update.
         """
-        interest_df, account_interest_df, transactions_df = self._run_pipeline(
+        _, account_interest_df, transactions_df = self._run_pipeline(
             spark,
             tcatbal_rows=[
                 Row(acct_id=1, tran_type_cd="01", tran_cat_cd=1, tran_cat_bal=Decimal("5000.00")),
@@ -254,7 +253,7 @@ class TestFullPipeline:
         BR-2 end-to-end: account group not in DISCGRP → DEFAULT rate used.
         balance=1200.00, DEFAULT rate=6.0000 → (1200 * 6) / 1200 = 6.00
         """
-        interest_df, account_interest_df, transactions_df = self._run_pipeline(
+        _, _, transactions_df = self._run_pipeline(
             spark,
             tcatbal_rows=[
                 Row(acct_id=1, tran_type_cd="01", tran_cat_cd=1, tran_cat_bal=Decimal("1200.00")),
@@ -279,7 +278,7 @@ class TestFullPipeline:
         XREF not found → pipeline continues with tran_card_num=NULL.
         Replaces: COBOL 1110-GET-XREF-DATA INVALID KEY (display warning, continue)
         """
-        interest_df, account_interest_df, transactions_df = self._run_pipeline(
+        _, _, transactions_df = self._run_pipeline(
             spark,
             tcatbal_rows=[
                 Row(acct_id=1, tran_type_cd="01", tran_cat_cd=1, tran_cat_bal=Decimal("1200.00")),

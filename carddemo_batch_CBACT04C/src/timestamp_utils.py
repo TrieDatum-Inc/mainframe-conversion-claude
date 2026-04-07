@@ -67,9 +67,7 @@ def parse_db2_timestamp(ts_str: str) -> datetime:
     # Format: YYYY-MM-DD-HH.MM.SS.mmm0000
     # Example: 2026-04-07-01.30.00.0000000
     try:
-        dt_part = ts_str[:19]  # YYYY-MM-DD-HH.MM.SS
         frac_part = ts_str[20:23]  # mmm (first 3 digits of fractional)
-        dt_str = dt_part.replace("-", " ", 3)
         # Rebuild as parseable string: YYYY-MM-DD HH:MM:SS
         date_str = ts_str[0:10]       # YYYY-MM-DD
         time_str = ts_str[11:19]      # HH.MM.SS -> HH:MM:SS

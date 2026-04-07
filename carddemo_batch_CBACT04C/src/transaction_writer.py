@@ -32,6 +32,32 @@ from .constants import (
 from .timestamp_utils import get_db2_format_timestamp
 
 
+def _build_tran_id_col(run_date_compact: str, suffix_digits: int) -> "F.Column":
+    """
+    Build the TRAN-ID column expression.
+
+    Replaces: TRAN-ID = PARM-DATE (8 chars) + WS-TRANID-SUFFIX (6-digit zero-padded counter).
+    Uses row_number() over acct_id ordering so the suffix is compact (1-N) and deterministic.
+    """
+    seq_window = Window.orderBy("acct_id")
+    return F.concat(
+        F.lit(run_date_compact),
+        F.lpad(F.row_number().over(seq_window).cast(StringType()), suffix_digits, "0"),
+    )
+
+
+def _build_tran_desc_col() -> "F.Column":
+    """
+    Build the TRAN-DESC column expression.
+
+    Replicates COBOL: TRAN-DESC = 'Int. for a/c ' || ZERO-PADDED(ACCT-ID, 11)
+    """
+    return F.concat(
+        F.lit(INTEREST_TRAN_DESC_PREFIX),
+        F.lpad(F.col("acct_id").cast(StringType()), 11, "0"),
+    )
+
+
 def read_card_xref(spark: SparkSession) -> DataFrame:
     """
     Read card cross-reference table for card number lookup.
@@ -94,61 +120,40 @@ def build_interest_transactions(
             f"run_date '{run_date}' produces unexpected compact form '{run_date_compact}'"
         )
 
-    # Join with XREF to get card_num per account
+    # Join with XREF to get card_num per account.
     # Replaces: 1110-GET-XREF-DATA — READ XREF-FILE by FD-XREF-ACCT-ID
     # COBOL: on INVALID KEY → DISPLAY warning and continue (tran_card_num stays as spaces)
     with_xref = account_interest_df.join(xref_df, on="acct_id", how="left")
 
-    # Assign a 1-based sequential row number for TRAN-ID suffix.
-    # Replaces: ADD 1 TO WS-TRANID-SUFFIX in 1300-B-WRITE-TX
-    #
-    # row_number() over Window.orderBy("acct_id") produces a compact 1-N integer,
+    # Build all TRAN-RECORD fields in a single withColumns call.
+    # row_number() over Window.orderBy("acct_id") produces a compact 1-N TRAN-ID suffix,
     # guaranteed to fit within TRAN_ID_SUFFIX_DIGITS (6) for any realistic batch size.
     # monotonically_increasing_id() was rejected because it encodes partition offsets
     # into the high bits of a 64-bit integer — values like 8589934592 exceed 6 digits
     # on multi-partition DataFrames and cause assert_tran_id_uniqueness to fail when
     # lpad silently truncates the string, producing collisions.
-    _seq_window = Window.orderBy("acct_id")
-    with_seq = with_xref.withColumn("_seq_id", F.row_number().over(_seq_window))
-
-    # Build all TRAN-RECORD fields
-    transactions_df = (
-        with_seq
-        .withColumn(
-            "tran_id",
-            F.concat(
-                F.lit(run_date_compact),
-                F.lpad(F.col("_seq_id").cast(StringType()), TRAN_ID_SUFFIX_DIGITS, "0"),
-            ),
-        )
-        .withColumn("tran_type_cd", F.lit(INTEREST_TRAN_TYPE_CD))
-        .withColumn("tran_cat_cd", F.lit(INTEREST_TRAN_CAT_CD).cast(IntegerType()))
-        .withColumn("tran_source", F.lit(INTEREST_TRAN_SOURCE))
-        .withColumn(
-            "tran_desc",
-            F.concat(
-                F.lit(INTEREST_TRAN_DESC_PREFIX),
-                F.lpad(F.col("acct_id").cast(StringType()), 11, "0"),
-            ),
-        )
-        .withColumn("tran_amt", F.col("total_interest").cast(DecimalType(11, 2)))
-        .withColumn("tran_merchant_id", F.lit(INTEREST_TRAN_MERCHANT_ID).cast(LongType()))
-        .withColumn("tran_merchant_name", F.lit(INTEREST_TRAN_MERCHANT_NAME))
-        .withColumn("tran_merchant_city", F.lit(INTEREST_TRAN_MERCHANT_CITY))
-        .withColumn("tran_merchant_zip", F.lit(INTEREST_TRAN_MERCHANT_ZIP))
-        .withColumn(
-            "tran_card_num",
-            F.col("card_num"),  # NULL if XREF not found — matches COBOL INVALID KEY behaviour
-        )
-        .withColumn("tran_orig_ts", F.lit(current_ts_str))
-        .withColumn("tran_proc_ts", F.lit(current_ts_str))
-        # Silver metadata columns
-        .withColumn("_silver_pipeline_run_id", F.lit(pipeline_run_id))
-        .withColumn("_silver_load_ts", F.current_timestamp())
-        .drop("_seq_id", "category_detail", "acct_group_id", "total_interest")
+    return (
+        with_xref
+        .withColumns({
+            "tran_id": _build_tran_id_col(run_date_compact, TRAN_ID_SUFFIX_DIGITS),
+            "tran_type_cd": F.lit(INTEREST_TRAN_TYPE_CD),
+            "tran_cat_cd": F.lit(INTEREST_TRAN_CAT_CD).cast(IntegerType()),
+            "tran_source": F.lit(INTEREST_TRAN_SOURCE),
+            "tran_desc": _build_tran_desc_col(),
+            "tran_amt": F.col("total_interest").cast(DecimalType(11, 2)),
+            "tran_merchant_id": F.lit(INTEREST_TRAN_MERCHANT_ID).cast(LongType()),
+            "tran_merchant_name": F.lit(INTEREST_TRAN_MERCHANT_NAME),
+            "tran_merchant_city": F.lit(INTEREST_TRAN_MERCHANT_CITY),
+            "tran_merchant_zip": F.lit(INTEREST_TRAN_MERCHANT_ZIP),
+            # NULL if XREF not found — matches COBOL INVALID KEY behaviour
+            "tran_card_num": F.col("card_num"),
+            "tran_orig_ts": F.lit(current_ts_str),
+            "tran_proc_ts": F.lit(current_ts_str),
+            "_silver_pipeline_run_id": F.lit(pipeline_run_id),
+            "_silver_load_ts": F.current_timestamp(),
+        })
+        .drop("category_detail", "acct_group_id", "total_interest", "card_num")
     )
-
-    return transactions_df
 
 
 def write_interest_transactions(
