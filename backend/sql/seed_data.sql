@@ -31,16 +31,16 @@ INSERT INTO customers (customer_id, first_name, middle_name, last_name,
     state_code, country_code, zip_code, phone_1, phone_2,
     ssn, government_id_ref, date_of_birth, eft_account_id, primary_card_holder, fico_score)
 VALUES
-(1,  'Immanuel', 'Madeline', 'Kessler',     '618 Deshaun Route',     'Apt. 802',  'Altenwerthshire',   'NC', 'USA', '12546',      '(908)119-8310', '(373)693-8684', '020-97-3888', '0000000004', '1961-06-08', '00535817', 'Y', 274),
-(2,  'Enrico',   'April',    'Rosenbaum',   '4917 Myrna Flats',      'Apt. 453',  'West Bernita',      'IN', 'USA', '22770',      '(429)706-9510', '(744)950-5272', '587-51-8382', '0000000005', '1961-10-08', '00691940', 'Y', 268),
-(3,  'Larry',    'Cody',     'Homenick',    '362 Esta Parks',        'Apt. 390',  'New Gladys',        'GA', 'USA', '19852-6716', '(950)396-9024', '(685)168-8826', '317-46-0867', '0000000005', '1987-11-30', '00064657', 'Y', 616),
-(4,  'Delbert',  'Kaia',     'Parisian',    '638 Blanda Gateway',    'Apt. 076',  'Lake Virginie',     'MI', 'USA', '39035-0455', '(801)603-4121', '(156)074-6837', '660-35-4258', '0000000006', '1985-01-13', '00408027', 'Y', 776),
-(5,  'Treva',    'Manley',   'Schowalter',  '5653 Legros Plaza',     'Apt. 968',  'Alvinaport',        'MI', 'USA', '02251-1698', '(978)775-4633', '(439)943-7644', '611-26-4288', '0000000006', '1971-09-29', '00063655', 'Y', 529),
-(6,  'Layne',    'Isidro',   'Rempel',      '461 Pollich Harbors',   'Suite 231', 'Vandervortview',    'TX', 'USA', '71104-3302', '(802)561-2782', '(773)419-4810', '443-62-5441', '0000000004', '1963-04-06', '00003641', 'Y', 413),
-(7,  'Carter',   'Reece',    'Veum',        '22 Josianne Cliffs',    'Apt. 181',  'Lindgrenfort',      'OH', 'USA', '38804',      '(260)427-1218', '(491)726-1745', '206-66-8040', '0000000003', '1972-04-25', '00002000', 'Y', 665),
-(8,  'Maci',     'Thelma',   'Robel',       '44 Renner Point',       'Apt. 301',  'Hyattstad',         'WA', 'USA', '71302-2107', '(929)826-3060', '(447)651-8093', '572-86-0038', '0000000004', '1979-04-25', '00001207', 'Y', 612),
-(9,  'Aniya',    'Toni',     'Von',         '3568 Gino Valley',      'Apt. 562',  'Wolfhaven',         'IL', 'USA', '53219',      '(321)478-9012', '(312)555-7890', '104-53-2901', '0000000005', '1966-08-15', '00005037', 'Y', 720),
-(10, 'Ward',     'James',    'Jones',       '8102 Moen Shoal',       'Suite 100', 'Beahanland',        'NY', 'USA', '10001',      '(212)555-1234', '(718)555-9876', '233-89-4571', '0000000002', '1958-03-22', '00002756', 'Y', 698)
+(1,  'Immanuel', 'Madeline', 'Kessler',     '618 Deshaun Route',     'Apt. 802',  'Altenwerthshire',   'NC', 'USA', '12546',      '(908)119-8310', '(373)693-8684', '123-45-0001', '0000000004', '1961-06-08', '00535817', 'Y', 574),
+(2,  'Enrico',   'April',    'Rosenbaum',   '4917 Myrna Flats',      'Apt. 453',  'West Bernita',      'IN', 'USA', '22770',      '(429)706-9510', '(744)950-5272', '123-45-0002', '0000000005', '1961-10-08', '00691940', 'Y', 568),
+(3,  'Larry',    'Cody',     'Homenick',    '362 Esta Parks',        'Apt. 390',  'New Gladys',        'GA', 'USA', '19852-6716', '(950)396-9024', '(685)168-8826', '123-45-0003', '0000000005', '1987-11-30', '00064657', 'Y', 616),
+(4,  'Delbert',  'Kaia',     'Parisian',    '638 Blanda Gateway',    'Apt. 076',  'Lake Virginie',     'MI', 'USA', '39035-0455', '(801)603-4121', '(156)074-6837', '123-45-0004', '0000000006', '1985-01-13', '00408027', 'Y', 776),
+(5,  'Treva',    'Manley',   'Schowalter',  '5653 Legros Plaza',     'Apt. 968',  'Alvinaport',        'MI', 'USA', '02251-1698', '(978)775-4633', '(439)943-7644', '123-45-0005', '0000000006', '1971-09-29', '00063655', 'Y', 529),
+(6,  'Layne',    'Isidro',   'Rempel',      '461 Pollich Harbors',   'Suite 231', 'Vandervortview',    'TX', 'USA', '71104-3302', '(802)561-2782', '(773)419-4810', '123-45-0006', '0000000004', '1963-04-06', '00003641', 'Y', 413),
+(7,  'Carter',   'Reece',    'Veum',        '22 Josianne Cliffs',    'Apt. 181',  'Lindgrenfort',      'OH', 'USA', '38804',      '(260)427-1218', '(491)726-1745', '123-45-0007', '0000000003', '1972-04-25', '00002000', 'Y', 665),
+(8,  'Maci',     'Thelma',   'Robel',       '44 Renner Point',       'Apt. 301',  'Hyattstad',         'WA', 'USA', '71302-2107', '(929)826-3060', '(447)651-8093', '123-45-0008', '0000000004', '1979-04-25', '00001207', 'Y', 612),
+(9,  'Aniya',    'Toni',     'Von',         '3568 Gino Valley',      'Apt. 562',  'Wolfhaven',         'IL', 'USA', '53219',      '(321)478-9012', '(312)555-7890', '123-45-0009', '0000000005', '1966-08-15', '00005037', 'Y', 720),
+(10, 'Ward',     'James',    'Jones',       '8102 Moen Shoal',       'Suite 100', 'Beahanland',        'NY', 'USA', '10001',      '(212)555-1234', '(718)555-9876', '123-45-0010', '0000000002', '1958-03-22', '00002756', 'Y', 698)
 ON CONFLICT (customer_id) DO NOTHING;
 
 -- Account-Customer cross-reference

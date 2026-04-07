@@ -69,6 +69,10 @@ function CardListContent() {
     fetchCards(1);
   }
 
+  if (!isAuthenticated) {
+    return null; // Prevent flash before redirect fires
+  }
+
   return (
     <div className="min-h-screen bg-mainframe-bg">
       <AppHeader

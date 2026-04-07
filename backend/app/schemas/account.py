@@ -114,6 +114,18 @@ class CustomerUpdateRequest(BaseModel):
     primary_card_holder: Optional[str] = Field(None, pattern=r"^[YN]$")
     fico_score: Optional[int] = Field(None, ge=300, le=850)
 
+    @field_validator("date_of_birth", mode="before")
+    @classmethod
+    def validate_date_of_birth_format(cls, v: Optional[str]) -> Optional[str]:
+        """Validate ISO date format for date_of_birth (YYYY-MM-DD)."""
+        if v is None or v == "":
+            return None
+        try:
+            date.fromisoformat(v)
+        except ValueError:
+            raise ValueError(f"Invalid date format '{v}': expected YYYY-MM-DD")
+        return v
+
     @model_validator(mode="after")
     def validate_ssn_parts(self) -> "CustomerUpdateRequest":
         """
@@ -156,6 +168,10 @@ class AccountUpdateRequest(BaseModel):
 
     COBOL rule: cash_credit_limit must not exceed credit_limit.
     """
+    optimistic_lock_version: str = Field(
+        ...,
+        description="ISO datetime from GET response updated_at — prevents concurrent overwrites",
+    )
     active_status: Optional[str] = Field(None, pattern=r"^[YN]$")
     credit_limit: Optional[Decimal] = Field(None, ge=0)
     cash_credit_limit: Optional[Decimal] = Field(None, ge=0)
@@ -164,6 +180,21 @@ class AccountUpdateRequest(BaseModel):
     reissue_date: Optional[str] = None
     group_id: Optional[str] = Field(None, max_length=10)
     customer: CustomerUpdateRequest
+
+    @field_validator("open_date", "expiration_date", "reissue_date", mode="before")
+    @classmethod
+    def validate_date_format(cls, v: Optional[str]) -> Optional[str]:
+        """
+        Validate that date strings are ISO format (YYYY-MM-DD).
+        Raises ValueError early so clients receive 422 instead of silent no-op.
+        """
+        if v is None or v == "":
+            return None
+        try:
+            date.fromisoformat(v)
+        except ValueError:
+            raise ValueError(f"Invalid date format '{v}': expected YYYY-MM-DD")
+        return v
 
     @model_validator(mode="after")
     def validate_cash_limit_vs_credit_limit(self) -> "AccountUpdateRequest":

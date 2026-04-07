@@ -63,11 +63,9 @@ export function extractErrorCode(error: unknown): string | null {
 // ---------------------------------------------------------------------------
 
 export async function login(credentials: LoginRequest): Promise<TokenResponse> {
-  const form = new URLSearchParams();
-  form.append("username", credentials.username);
-  form.append("password", credentials.password);
-  const resp = await apiClient.post<TokenResponse>("/auth/token", form, {
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+  const resp = await apiClient.post<TokenResponse>("/auth/login", {
+    user_id: credentials.username,
+    password: credentials.password,
   });
   return resp.data;
 }

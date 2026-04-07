@@ -15,7 +15,7 @@ CICS access pattern:
   Replaced by PostgreSQL index idx_cardxref_account on account_id.
 """
 
-from sqlalchemy import BigInteger, CHAR, Index, Integer
+from sqlalchemy import BigInteger, CHAR, ForeignKey, Index, Integer
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -38,19 +38,19 @@ class CardXref(Base):
 
     # XREF-CARD-NUM PIC X(16) — VSAM KSDS primary key
     card_number: Mapped[str] = mapped_column(
-        CHAR(16), primary_key=True,
+        CHAR(16), ForeignKey("credit_cards.card_number"), primary_key=True,
         comment="COBOL: XREF-CARD-NUM PIC X(16) — VSAM KSDS primary key",
     )
 
     # XREF-CUST-ID PIC 9(09)
     customer_id: Mapped[int] = mapped_column(
-        Integer, nullable=False,
+        Integer, ForeignKey("customers.customer_id"), nullable=False,
         comment="COBOL: XREF-CUST-ID PIC 9(09)",
     )
 
     # XREF-ACCT-ID PIC 9(11) — indexed to replace CARDAIX VSAM AIX
     account_id: Mapped[int] = mapped_column(
-        BigInteger, nullable=False,
+        BigInteger, ForeignKey("accounts.account_id"), nullable=False,
         comment="COBOL: XREF-ACCT-ID PIC 9(11) — idx_cardxref_account replaces CARDAIX",
     )
 

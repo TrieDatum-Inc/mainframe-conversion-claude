@@ -11,7 +11,7 @@ Key functions:
 Cognitive complexity kept under 15 per function by extracting helpers.
 """
 
-from datetime import datetime
+from datetime import date as date_type, datetime
 from decimal import Decimal
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -143,6 +143,36 @@ async def view_account(account_id: int, db: AsyncSession) -> AccountViewResponse
 # Update account — COACTUPC
 # =============================================================================
 
+def _parse_lock_version(version_str: str) -> datetime | None:
+    """Parse ISO datetime string to datetime, returning None on parse failure."""
+    try:
+        if version_str.endswith("Z"):
+            version_str = version_str[:-1] + "+00:00"
+        return datetime.fromisoformat(version_str)
+    except (ValueError, AttributeError):
+        return None
+
+
+def _check_optimistic_lock(account: Account, lock_version: str) -> None:
+    """
+    Compare optimistic lock version to detect concurrent modification.
+
+    COACTUPC: compares updated_at timestamp (truncated to seconds for ISO round-trip).
+    Raises OptimisticLockError if timestamps differ.
+    """
+    request_ts = _parse_lock_version(lock_version)
+    if request_ts is None:
+        raise OptimisticLockError("Account")
+
+    stored_ts = account.updated_at
+    # Truncate microseconds — ISO string round-trip loses sub-second precision
+    stored_sec = stored_ts.replace(microsecond=0, tzinfo=None)
+    request_sec = request_ts.replace(microsecond=0, tzinfo=None)
+
+    if stored_sec != request_sec:
+        raise OptimisticLockError("Account")
+
+
 def _apply_account_changes(account: Account, req: AccountUpdateRequest) -> bool:
     """
     Apply account field updates and return True if any field changed.
@@ -162,36 +192,26 @@ def _apply_account_changes(account: Account, req: AccountUpdateRequest) -> bool:
     _set("cash_credit_limit", req.cash_credit_limit)
     _set("group_id", req.group_id)
 
-    # Date fields — convert string to date if provided
+    # Date fields — convert ISO string to date if provided.
+    # Format is pre-validated by AccountUpdateRequest.validate_date_format,
+    # so fromisoformat() is safe here.
     if req.open_date:
-        from datetime import date as date_type
-        try:
-            new_date = date_type.fromisoformat(req.open_date)
-            if account.open_date != new_date:
-                account.open_date = new_date
-                changed = True
-        except ValueError:
-            pass
+        new_date = date_type.fromisoformat(req.open_date)
+        if account.open_date != new_date:
+            account.open_date = new_date
+            changed = True
 
     if req.expiration_date:
-        from datetime import date as date_type
-        try:
-            new_date = date_type.fromisoformat(req.expiration_date)
-            if account.expiration_date != new_date:
-                account.expiration_date = new_date
-                changed = True
-        except ValueError:
-            pass
+        new_date = date_type.fromisoformat(req.expiration_date)
+        if account.expiration_date != new_date:
+            account.expiration_date = new_date
+            changed = True
 
     if req.reissue_date:
-        from datetime import date as date_type
-        try:
-            new_date = date_type.fromisoformat(req.reissue_date)
-            if account.reissue_date != new_date:
-                account.reissue_date = new_date
-                changed = True
-        except ValueError:
-            pass
+        new_date = date_type.fromisoformat(req.reissue_date)
+        if account.reissue_date != new_date:
+            account.reissue_date = new_date
+            changed = True
 
     return changed
 
@@ -243,16 +263,12 @@ def _apply_customer_changes(customer: Customer, cust_req: CustomerUpdateRequest)
         customer.ssn = new_ssn
         changed = True
 
-    # Date of birth
+    # Date of birth — format pre-validated by schema field_validator
     if cust_req.date_of_birth:
-        from datetime import date as date_type
-        try:
-            new_dob = date_type.fromisoformat(cust_req.date_of_birth)
-            if customer.date_of_birth != new_dob:
-                customer.date_of_birth = new_dob
-                changed = True
-        except ValueError:
-            pass
+        new_dob = date_type.fromisoformat(cust_req.date_of_birth)
+        if customer.date_of_birth != new_dob:
+            customer.date_of_birth = new_dob
+            changed = True
 
     return changed
 
@@ -288,6 +304,8 @@ async def update_account(
     customer = await customer_repo.get_by_account_id(account_id)
     if customer is None:
         raise NotFoundError("Customer for account", str(account_id))
+
+    _check_optimistic_lock(account, request.optimistic_lock_version)
 
     account_changed = _apply_account_changes(account, request)
     customer_changed = _apply_customer_changes(customer, request.customer)

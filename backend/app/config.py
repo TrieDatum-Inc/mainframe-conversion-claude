@@ -23,7 +23,8 @@ class Settings(BaseSettings):
     )
 
     # JWT settings — replaces CICS COMMAREA session management
-    jwt_secret_key: str = "carddemo-dev-secret-key-change-in-production"
+    # No default: application must fail at startup if JWT_SECRET_KEY is not set
+    jwt_secret_key: str
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 60
 

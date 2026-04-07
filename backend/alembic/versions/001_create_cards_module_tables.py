@@ -148,9 +148,9 @@ def upgrade() -> None:
     # card_account_xref (CARDXREF + CARDAIX replacement)
     op.create_table(
         "card_account_xref",
-        sa.Column("card_number", sa.CHAR(16), primary_key=True),
-        sa.Column("customer_id", sa.Integer, nullable=False),
-        sa.Column("account_id", sa.BigInteger, nullable=False),
+        sa.Column("card_number", sa.CHAR(16), sa.ForeignKey("credit_cards.card_number"), primary_key=True),
+        sa.Column("customer_id", sa.Integer, sa.ForeignKey("customers.customer_id"), nullable=False),
+        sa.Column("account_id", sa.BigInteger, sa.ForeignKey("accounts.account_id"), nullable=False),
     )
     op.create_index("idx_cardxref_account", "card_account_xref", ["account_id"])
     op.create_index("idx_cardxref_customer", "card_account_xref", ["customer_id"])
