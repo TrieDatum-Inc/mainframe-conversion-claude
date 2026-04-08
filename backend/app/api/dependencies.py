@@ -29,7 +29,7 @@ class CurrentUser:
         return self.user_type == "A"
 
 
-async def get_current_user(
+def get_current_user(
     credentials: Annotated[HTTPAuthorizationCredentials, Depends(_bearer_scheme)],
 ) -> CurrentUser:
     """Decode and validate the JWT Bearer token."""
@@ -67,7 +67,7 @@ async def get_current_user(
     return CurrentUser(user_id=user_id, user_type=user_type)
 
 
-async def require_admin(
+def require_admin(
     current_user: Annotated[CurrentUser, Depends(get_current_user)],
 ) -> CurrentUser:
     """Enforce admin-only access (user_type='A')."""

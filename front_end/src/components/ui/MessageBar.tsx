@@ -3,9 +3,9 @@
 type MessageType = "error" | "success" | "info" | "warn";
 
 interface MessageBarProps {
-  type: MessageType;
-  message: string;
-  onDismiss?: () => void;
+  readonly type: MessageType;
+  readonly message: string;
+  readonly onDismiss?: () => void;
 }
 
 const colorMap: Record<MessageType, string> = {

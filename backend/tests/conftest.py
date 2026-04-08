@@ -47,8 +47,8 @@ async def engine():
 @pytest.fixture
 async def db_session(engine):
     """Provide a test database session with rollback isolation."""
-    TestSessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
-    async with TestSessionLocal() as session:
+    test_session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+    async with test_session_factory() as session:
         yield session
         await session.rollback()
 

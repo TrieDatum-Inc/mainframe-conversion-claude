@@ -23,6 +23,11 @@ down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
+# FK reference constants — avoids duplicating literal strings (S1192)
+_FK_ACCOUNTS_ID = "accounts.account_id"
+_FK_CUSTOMERS_ID = "customers.customer_id"
+_FK_CREDIT_CARDS_NUM = "credit_cards.card_number"
+
 
 def upgrade() -> None:
     # Shared trigger function
@@ -117,8 +122,8 @@ def upgrade() -> None:
     # account_customer_xref
     op.create_table(
         "account_customer_xref",
-        sa.Column("account_id", sa.BigInteger, sa.ForeignKey("accounts.account_id"), nullable=False),
-        sa.Column("customer_id", sa.Integer, sa.ForeignKey("customers.customer_id"), nullable=False),
+        sa.Column("account_id", sa.BigInteger, sa.ForeignKey(_FK_ACCOUNTS_ID), nullable=False),
+        sa.Column("customer_id", sa.Integer, sa.ForeignKey(_FK_CUSTOMERS_ID), nullable=False),
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now()),
         sa.PrimaryKeyConstraint("account_id", "customer_id", name="pk_account_customer_xref"),
     )
@@ -128,8 +133,8 @@ def upgrade() -> None:
     op.create_table(
         "credit_cards",
         sa.Column("card_number", sa.CHAR(16), primary_key=True),
-        sa.Column("account_id", sa.BigInteger, sa.ForeignKey("accounts.account_id"), nullable=False),
-        sa.Column("customer_id", sa.Integer, sa.ForeignKey("customers.customer_id"), nullable=False),
+        sa.Column("account_id", sa.BigInteger, sa.ForeignKey(_FK_ACCOUNTS_ID), nullable=False),
+        sa.Column("customer_id", sa.Integer, sa.ForeignKey(_FK_CUSTOMERS_ID), nullable=False),
         sa.Column("card_embossed_name", sa.String(50), nullable=True),
         sa.Column("expiration_date", sa.Date, nullable=True),
         sa.Column("expiration_day", sa.Integer, nullable=True),
@@ -148,9 +153,9 @@ def upgrade() -> None:
     # card_account_xref (CARDXREF + CARDAIX replacement)
     op.create_table(
         "card_account_xref",
-        sa.Column("card_number", sa.CHAR(16), sa.ForeignKey("credit_cards.card_number"), primary_key=True),
-        sa.Column("customer_id", sa.Integer, sa.ForeignKey("customers.customer_id"), nullable=False),
-        sa.Column("account_id", sa.BigInteger, sa.ForeignKey("accounts.account_id"), nullable=False),
+        sa.Column("card_number", sa.CHAR(16), sa.ForeignKey(_FK_CREDIT_CARDS_NUM), primary_key=True),
+        sa.Column("customer_id", sa.Integer, sa.ForeignKey(_FK_CUSTOMERS_ID), nullable=False),
+        sa.Column("account_id", sa.BigInteger, sa.ForeignKey(_FK_ACCOUNTS_ID), nullable=False),
     )
     op.create_index("idx_cardxref_account", "card_account_xref", ["account_id"])
     op.create_index("idx_cardxref_customer", "card_account_xref", ["customer_id"])

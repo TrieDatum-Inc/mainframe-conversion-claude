@@ -4,11 +4,14 @@
 -- =============================================================================
 
 -- Users (admin + regular)
+-- Password hashes are intentionally placeholder values for seed/dev data only.
+-- Generate real hashes at deploy time using: python -c "from app.utils.security import hash_password; print(hash_password('YourPassword'))"
+-- DO NOT use these hashes in production.
 INSERT INTO users (user_id, first_name, last_name, password_hash, user_type) VALUES
-('ADMIN001', 'System',    'Administrator', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQyCjSB8N9Q5VGj5j1C5gKIHa', 'A'),
-('USER0001', 'Alice',     'Johnson',       '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQyCjSB8N9Q5VGj5j1C5gKIHa', 'U'),
-('USER0002', 'Bob',       'Smith',         '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQyCjSB8N9Q5VGj5j1C5gKIHa', 'U'),
-('USER0003', 'Carol',     'Williams',      '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQyCjSB8N9Q5VGj5j1C5gKIHa', 'U')
+('ADMIN001', 'System',    'Administrator', 'REPLACE_WITH_HASHED_PASSWORD', 'A'),
+('USER0001', 'Alice',     'Johnson',       'REPLACE_WITH_HASHED_PASSWORD', 'U'),
+('USER0002', 'Bob',       'Smith',         'REPLACE_WITH_HASHED_PASSWORD', 'U'),
+('USER0003', 'Carol',     'Williams',      'REPLACE_WITH_HASHED_PASSWORD', 'U')
 ON CONFLICT (user_id) DO NOTHING;
 
 -- Accounts (from acctdata.txt — 10 records)

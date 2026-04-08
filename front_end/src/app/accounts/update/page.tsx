@@ -22,7 +22,7 @@ const ssnPartSchema = z.object({
     .regex(/^\d{3}$/, "Must be 3 digits")
     .refine((v) => v !== "000", "Cannot be 000")
     .refine((v) => v !== "666", "Cannot be 666")
-    .refine((v) => parseInt(v) < 900, "Cannot start with 9")
+    .refine((v) => Number.parseInt(v) < 900, "Cannot start with 9")
     .optional()
     .or(z.literal("")),
   ssn_part2: z
@@ -153,8 +153,8 @@ function AccountUpdateContent() {
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
-    const id = parseInt(accountIdInput, 10);
-    if (isNaN(id) || id <= 0) {
+    const id = Number.parseInt(accountIdInput, 10);
+    if (Number.isNaN(id) || id <= 0) {
       setErrorMsg("ACCOUNT ID MUST BE A POSITIVE NUMBER");
       return;
     }
@@ -230,8 +230,9 @@ function AccountUpdateContent() {
         {/* Search */}
         <form onSubmit={handleSearch} className="border border-mainframe-border p-4 mb-4">
           <div className="flex items-center space-x-4">
-            <label className="text-mainframe-dim text-xs w-24">ACCT NUM:</label>
+            <label htmlFor="acct-num-input" className="text-mainframe-dim text-xs w-24">ACCT NUM:</label>
             <input
+              id="acct-num-input"
               type="text"
               value={accountIdInput}
               onChange={(e) => setAccountIdInput(e.target.value)}
@@ -271,29 +272,29 @@ function AccountUpdateContent() {
                 ACCOUNT INFORMATION (ACCT: {account.account_id})
               </h2>
               <div className="grid grid-cols-2 gap-4 text-xs">
-                <FormField label="STATUS" error={errors.active_status?.message}>
-                  <select {...register("active_status")} className="px-2 py-1 text-sm w-20">
+                <FormField label="STATUS" htmlFor="f-active-status" error={errors.active_status?.message}>
+                  <select id="f-active-status" {...register("active_status")} className="px-2 py-1 text-sm w-20">
                     <option value="Y">Y - ACTIVE</option>
                     <option value="N">N - INACTIVE</option>
                   </select>
                 </FormField>
-                <FormField label="CREDIT LIMIT" error={errors.credit_limit?.message}>
-                  <input {...register("credit_limit")} type="number" step="0.01" className="px-2 py-1 text-sm w-32" />
+                <FormField label="CREDIT LIMIT" htmlFor="f-credit-limit" error={errors.credit_limit?.message}>
+                  <input id="f-credit-limit" {...register("credit_limit")} type="number" step="0.01" className="px-2 py-1 text-sm w-32" />
                 </FormField>
-                <FormField label="CASH LIMIT" error={errors.cash_credit_limit?.message}>
-                  <input {...register("cash_credit_limit")} type="number" step="0.01" className="px-2 py-1 text-sm w-32" />
+                <FormField label="CASH LIMIT" htmlFor="f-cash-limit" error={errors.cash_credit_limit?.message}>
+                  <input id="f-cash-limit" {...register("cash_credit_limit")} type="number" step="0.01" className="px-2 py-1 text-sm w-32" />
                 </FormField>
-                <FormField label="CURRENT BAL" error={errors.current_balance?.message}>
-                  <input {...register("current_balance")} type="number" step="0.01" className="px-2 py-1 text-sm w-32" />
+                <FormField label="CURRENT BAL" htmlFor="f-current-balance" error={errors.current_balance?.message}>
+                  <input id="f-current-balance" {...register("current_balance")} type="number" step="0.01" className="px-2 py-1 text-sm w-32" />
                 </FormField>
-                <FormField label="CYCLE CREDIT" error={errors.current_cycle_credit?.message}>
-                  <input {...register("current_cycle_credit")} type="number" step="0.01" className="px-2 py-1 text-sm w-32" />
+                <FormField label="CYCLE CREDIT" htmlFor="f-cycle-credit" error={errors.current_cycle_credit?.message}>
+                  <input id="f-cycle-credit" {...register("current_cycle_credit")} type="number" step="0.01" className="px-2 py-1 text-sm w-32" />
                 </FormField>
-                <FormField label="CYCLE DEBIT" error={errors.current_cycle_debit?.message}>
-                  <input {...register("current_cycle_debit")} type="number" step="0.01" className="px-2 py-1 text-sm w-32" />
+                <FormField label="CYCLE DEBIT" htmlFor="f-cycle-debit" error={errors.current_cycle_debit?.message}>
+                  <input id="f-cycle-debit" {...register("current_cycle_debit")} type="number" step="0.01" className="px-2 py-1 text-sm w-32" />
                 </FormField>
-                <FormField label="GROUP ID" error={errors.group_id?.message}>
-                  <input {...register("group_id")} type="text" maxLength={10} className="px-2 py-1 text-sm w-24" />
+                <FormField label="GROUP ID" htmlFor="f-group-id" error={errors.group_id?.message}>
+                  <input id="f-group-id" {...register("group_id")} type="text" maxLength={10} className="px-2 py-1 text-sm w-24" />
                 </FormField>
               </div>
             </div>
@@ -304,16 +305,16 @@ function AccountUpdateContent() {
                 CUSTOMER INFORMATION (CUST: {account.customer.customer_id})
               </h2>
               <div className="grid grid-cols-2 gap-4 text-xs">
-                <FormField label="FIRST NAME" error={errors.first_name?.message}>
-                  <input {...register("first_name")} type="text" maxLength={25} className="px-2 py-1 text-sm w-40" />
+                <FormField label="FIRST NAME" htmlFor="f-first-name" error={errors.first_name?.message}>
+                  <input id="f-first-name" {...register("first_name")} type="text" maxLength={25} className="px-2 py-1 text-sm w-40" />
                 </FormField>
-                <FormField label="MID NAME" error={errors.middle_name?.message}>
-                  <input {...register("middle_name")} type="text" maxLength={25} className="px-2 py-1 text-sm w-40" />
+                <FormField label="MID NAME" htmlFor="f-middle-name" error={errors.middle_name?.message}>
+                  <input id="f-middle-name" {...register("middle_name")} type="text" maxLength={25} className="px-2 py-1 text-sm w-40" />
                 </FormField>
-                <FormField label="LAST NAME" error={errors.last_name?.message}>
-                  <input {...register("last_name")} type="text" maxLength={25} className="px-2 py-1 text-sm w-40" />
+                <FormField label="LAST NAME" htmlFor="f-last-name" error={errors.last_name?.message}>
+                  <input id="f-last-name" {...register("last_name")} type="text" maxLength={25} className="px-2 py-1 text-sm w-40" />
                 </FormField>
-                <FormField label="SSN (P1-P2-P3)" error={undefined}>
+                <FormField label="SSN (P1-P2-P3)">
                   <div className="flex items-center space-x-1">
                     <input {...register("ssn_part1")} type="text" maxLength={3} className="px-1 py-1 text-sm w-10" placeholder="NNN" />
                     <span className="text-mainframe-dim">-</span>
@@ -323,26 +324,26 @@ function AccountUpdateContent() {
                     <span className="text-mainframe-dim text-xs ml-1">(CURRENT: {account.customer.ssn_masked})</span>
                   </div>
                 </FormField>
-                <FormField label="ADDRESS" error={errors.address?.message}>
-                  <input {...register("address")} type="text" maxLength={50} className="px-2 py-1 text-sm w-56" />
+                <FormField label="ADDRESS" htmlFor="f-address" error={errors.address?.message}>
+                  <input id="f-address" {...register("address")} type="text" maxLength={50} className="px-2 py-1 text-sm w-56" />
                 </FormField>
-                <FormField label="CITY" error={errors.city?.message}>
-                  <input {...register("city")} type="text" maxLength={50} className="px-2 py-1 text-sm w-40" />
+                <FormField label="CITY" htmlFor="f-city" error={errors.city?.message}>
+                  <input id="f-city" {...register("city")} type="text" maxLength={50} className="px-2 py-1 text-sm w-40" />
                 </FormField>
-                <FormField label="STATE" error={errors.state?.message}>
-                  <input {...register("state")} type="text" maxLength={2} className="px-2 py-1 text-sm w-12" />
+                <FormField label="STATE" htmlFor="f-state" error={errors.state?.message}>
+                  <input id="f-state" {...register("state")} type="text" maxLength={2} className="px-2 py-1 text-sm w-12" />
                 </FormField>
-                <FormField label="ZIP" error={errors.zip_code?.message}>
-                  <input {...register("zip_code")} type="text" maxLength={10} className="px-2 py-1 text-sm w-20" />
+                <FormField label="ZIP" htmlFor="f-zip-code" error={errors.zip_code?.message}>
+                  <input id="f-zip-code" {...register("zip_code")} type="text" maxLength={10} className="px-2 py-1 text-sm w-20" />
                 </FormField>
-                <FormField label="PHONE" error={errors.phone_number?.message}>
-                  <input {...register("phone_number")} type="text" maxLength={15} className="px-2 py-1 text-sm w-36" />
+                <FormField label="PHONE" htmlFor="f-phone" error={errors.phone_number?.message}>
+                  <input id="f-phone" {...register("phone_number")} type="text" maxLength={15} className="px-2 py-1 text-sm w-36" />
                 </FormField>
-                <FormField label="EMAIL" error={errors.email?.message}>
-                  <input {...register("email")} type="text" maxLength={50} className="px-2 py-1 text-sm w-56" />
+                <FormField label="EMAIL" htmlFor="f-email" error={errors.email?.message}>
+                  <input id="f-email" {...register("email")} type="text" maxLength={50} className="px-2 py-1 text-sm w-56" />
                 </FormField>
-                <FormField label="FICO SCORE" error={errors.fico_credit_score?.message}>
-                  <input {...register("fico_credit_score")} type="number" min={300} max={850} className="px-2 py-1 text-sm w-20" />
+                <FormField label="FICO SCORE" htmlFor="f-fico" error={errors.fico_credit_score?.message}>
+                  <input id="f-fico" {...register("fico_credit_score")} type="number" min={300} max={850} className="px-2 py-1 text-sm w-20" />
                 </FormField>
               </div>
             </div>
@@ -382,16 +383,18 @@ function AccountUpdateContent() {
 
 function FormField({
   label,
+  htmlFor,
   error,
   children,
 }: {
-  label: string;
-  error?: string;
-  children: React.ReactNode;
+  readonly label: string;
+  readonly htmlFor?: string;
+  readonly error?: string;
+  readonly children: React.ReactNode;
 }) {
   return (
     <div>
-      <label className="block text-mainframe-dim mb-1">{label}:</label>
+      <label htmlFor={htmlFor} className="block text-mainframe-dim mb-1">{label}:</label>
       {children}
       {error && <p className="text-mainframe-error text-xs mt-1">{error}</p>}
     </div>

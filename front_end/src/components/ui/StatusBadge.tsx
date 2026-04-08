@@ -1,9 +1,9 @@
 "use client";
 
 interface StatusBadgeProps {
-  status: "Y" | "N" | string;
-  activeLabel?: string;
-  inactiveLabel?: string;
+  readonly status: string;
+  readonly activeLabel?: string;
+  readonly inactiveLabel?: string;
 }
 
 export function StatusBadge({

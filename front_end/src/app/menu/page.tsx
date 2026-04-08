@@ -59,6 +59,10 @@ export default function MenuPage() {
     }
   }, [isAuthenticated, router]);
 
+  if (!isAuthenticated) {
+    return null; // Prevent flash before redirect fires
+  }
+
   return (
     <div className="min-h-screen bg-mainframe-bg">
       <AppHeader
@@ -76,8 +80,15 @@ export default function MenuPage() {
             {MENU_OPTIONS.map((option) => (
               <div
                 key={option.key}
+                role="button"
+                tabIndex={0}
                 className="flex items-start space-x-4 group cursor-pointer hover:bg-mainframe-panel p-2 transition-colors"
                 onClick={() => router.push(option.href)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    router.push(option.href);
+                  }
+                }}
               >
                 <span className="text-mainframe-info font-bold text-sm w-4">
                   {option.key}.

@@ -72,10 +72,11 @@ export default function LoginPage() {
         {/* Form */}
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
-            <label className="block text-mainframe-dim text-xs mb-1">
+            <label htmlFor="login-username" className="block text-mainframe-dim text-xs mb-1">
               USERID:
             </label>
             <input
+              id="login-username"
               {...register("username")}
               type="text"
               maxLength={8}
@@ -91,10 +92,11 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label className="block text-mainframe-dim text-xs mb-1">
+            <label htmlFor="login-password" className="block text-mainframe-dim text-xs mb-1">
               PASSWORD:
             </label>
             <input
+              id="login-password"
               {...register("password")}
               type="password"
               maxLength={8}

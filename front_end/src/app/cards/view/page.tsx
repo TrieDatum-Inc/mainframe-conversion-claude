@@ -62,6 +62,10 @@ function CardViewContent() {
     fetchCard(cardNumberInput);
   }
 
+  if (!isAuthenticated) {
+    return null; // Prevent flash before redirect fires
+  }
+
   return (
     <div className="min-h-screen bg-mainframe-bg">
       <AppHeader
@@ -73,8 +77,9 @@ function CardViewContent() {
         {/* Search */}
         <form onSubmit={handleSearch} className="border border-mainframe-border p-4 mb-4">
           <div className="flex items-center space-x-4">
-            <label className="text-mainframe-dim text-xs w-24">CARD NUM:</label>
+            <label htmlFor="card-num-view" className="text-mainframe-dim text-xs w-24">CARD NUM:</label>
             <input
+              id="card-num-view"
               type="text"
               value={cardNumberInput}
               onChange={(e) => setCardNumberInput(e.target.value)}
@@ -170,9 +175,9 @@ function FieldRow({
   value,
   mono = false,
 }: {
-  label: string;
-  value: React.ReactNode;
-  mono?: boolean;
+  readonly label: string;
+  readonly value: React.ReactNode;
+  readonly mono?: boolean;
 }) {
   return (
     <div className="flex">

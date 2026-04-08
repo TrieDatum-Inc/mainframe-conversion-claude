@@ -173,6 +173,22 @@ def _check_optimistic_lock(account: Account, lock_version: str) -> None:
         raise OptimisticLockError("Account")
 
 
+def _apply_date_field(obj, field: str, iso_value: str | None) -> bool:
+    """
+    Parse an ISO date string and apply it to `obj.field` if it differs.
+    Returns True if the field was updated.
+
+    Extracted from _apply_account_changes to keep cognitive complexity under 15.
+    """
+    if not iso_value:
+        return False
+    new_date = date_type.fromisoformat(iso_value)
+    if getattr(obj, field) == new_date:
+        return False
+    setattr(obj, field, new_date)
+    return True
+
+
 def _apply_account_changes(account: Account, req: AccountUpdateRequest) -> bool:
     """
     Apply account field updates and return True if any field changed.
@@ -192,26 +208,10 @@ def _apply_account_changes(account: Account, req: AccountUpdateRequest) -> bool:
     _set("cash_credit_limit", req.cash_credit_limit)
     _set("group_id", req.group_id)
 
-    # Date fields — convert ISO string to date if provided.
-    # Format is pre-validated by AccountUpdateRequest.validate_date_format,
-    # so fromisoformat() is safe here.
-    if req.open_date:
-        new_date = date_type.fromisoformat(req.open_date)
-        if account.open_date != new_date:
-            account.open_date = new_date
-            changed = True
-
-    if req.expiration_date:
-        new_date = date_type.fromisoformat(req.expiration_date)
-        if account.expiration_date != new_date:
-            account.expiration_date = new_date
-            changed = True
-
-    if req.reissue_date:
-        new_date = date_type.fromisoformat(req.reissue_date)
-        if account.reissue_date != new_date:
-            account.reissue_date = new_date
-            changed = True
+    # Date fields — format is pre-validated by AccountUpdateRequest.validate_date_format.
+    changed |= _apply_date_field(account, "open_date", req.open_date)
+    changed |= _apply_date_field(account, "expiration_date", req.expiration_date)
+    changed |= _apply_date_field(account, "reissue_date", req.reissue_date)
 
     return changed
 

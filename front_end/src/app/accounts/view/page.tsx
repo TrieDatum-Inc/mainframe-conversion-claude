@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense } from "react";
 import { useAuthStore } from "@/stores/auth-store";
 import { getAccount, extractErrorMessage } from "@/lib/api";
 import { AppHeader } from "@/components/layout/AppHeader";
@@ -10,7 +9,7 @@ import { MessageBar } from "@/components/ui/MessageBar";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { CurrencyDisplay } from "@/components/ui/CurrencyDisplay";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { formatDate, formatCurrency } from "@/lib/utils";
+import { formatDate } from "@/lib/utils";
 import type { AccountDetailResponse } from "@/types";
 
 /**
@@ -62,8 +61,8 @@ function AccountViewContent() {
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
-    const id = parseInt(accountIdInput, 10);
-    if (isNaN(id) || id <= 0) {
+    const id = Number.parseInt(accountIdInput, 10);
+    if (Number.isNaN(id) || id <= 0) {
       setErrorMsg("ACCOUNT ID MUST BE A POSITIVE NUMBER");
       return;
     }
@@ -85,8 +84,9 @@ function AccountViewContent() {
         {/* Search form */}
         <form onSubmit={handleSearch} className="border border-mainframe-border p-4 mb-4">
           <div className="flex items-center space-x-4">
-            <label className="text-mainframe-dim text-xs w-24">ACCT NUM:</label>
+            <label htmlFor="account-id-input" className="text-mainframe-dim text-xs w-24">ACCT NUM:</label>
             <input
+              id="account-id-input"
               type="text"
               value={accountIdInput}
               onChange={(e) => setAccountIdInput(e.target.value)}
@@ -222,8 +222,8 @@ function FieldRow({
   label,
   value,
 }: {
-  label: string;
-  value: React.ReactNode;
+  readonly label: string;
+  readonly value: React.ReactNode;
 }) {
   return (
     <div className="flex">

@@ -9,9 +9,9 @@ All endpoints require authentication. No admin restriction.
 This is a thin controller layer — all business logic in credit_card_service.py.
 """
 
-from typing import Optional
+from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import CurrentUser, get_current_user
@@ -21,10 +21,12 @@ from app.services import credit_card_service
 
 router = APIRouter(prefix="/cards", tags=["Credit Cards"])
 
+DbDep = Annotated[AsyncSession, Depends(get_db)]
+AuthDep = Annotated[CurrentUser, Depends(get_current_user)]
+
 
 @router.get(
     "",
-    response_model=CardListResponse,
     summary="List credit cards — COCRDLIC",
     description=(
         "Paginated card list. Default page_size=7 matches COCRDLIC WS-MAX-SCREEN-LINES=7. "
@@ -33,12 +35,12 @@ router = APIRouter(prefix="/cards", tags=["Credit Cards"])
     ),
 )
 async def list_cards(
-    page: int = Query(1, ge=1),
-    page_size: int = Query(7, ge=1, le=100),
-    account_id: Optional[int] = Query(None, description="ACCTSID filter"),
-    card_number: Optional[str] = Query(None, description="CARDSID prefix filter"),
-    db: AsyncSession = Depends(get_db),
-    _: CurrentUser = Depends(get_current_user),
+    db: DbDep,
+    _: AuthDep,
+    page: Annotated[int, Query(ge=1)] = 1,
+    page_size: Annotated[int, Query(ge=1, le=100)] = 7,
+    account_id: Annotated[Optional[int], Query(description="ACCTSID filter")] = None,
+    card_number: Annotated[Optional[str], Query(description="CARDSID prefix filter")] = None,
 ) -> CardListResponse:
     """COCRDLIC STARTBR/READNEXT browse → paginated SQL query."""
     return await credit_card_service.list_cards(
@@ -52,7 +54,6 @@ async def list_cards(
 
 @router.get(
     "/{card_number}",
-    response_model=CardDetailResponse,
     summary="View credit card — COCRDSLC",
     description=(
         "Fetch a single card record by card number. "
@@ -62,8 +63,8 @@ async def list_cards(
 )
 async def get_card(
     card_number: str,
-    db: AsyncSession = Depends(get_db),
-    _: CurrentUser = Depends(get_current_user),
+    db: DbDep,
+    _: AuthDep,
 ) -> CardDetailResponse:
     """COCRDSLC PROCESS-ENTER-KEY → READ DATASET(CARDDAT)."""
     return await credit_card_service.view_card(card_number, db)
@@ -71,7 +72,6 @@ async def get_card(
 
 @router.put(
     "/{card_number}",
-    response_model=CardDetailResponse,
     summary="Update credit card — COCRDUPC",
     description=(
         "Update card fields. account_id is PROTECTED and cannot be changed (ACCTSID PROT). "
@@ -83,8 +83,8 @@ async def get_card(
 async def update_card(
     card_number: str,
     request: CardUpdateRequest,
-    db: AsyncSession = Depends(get_db),
-    _: CurrentUser = Depends(get_current_user),
+    db: DbDep,
+    _: AuthDep,
 ) -> CardDetailResponse:
     """COCRDUPC: optimistic lock → validate → REWRITE DATASET(CARDDAT)."""
     return await credit_card_service.update_card(card_number, request, db)

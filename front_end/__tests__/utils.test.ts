@@ -28,11 +28,11 @@ describe("formatExpiry", () => {
   });
 
   it("returns N/A when month missing", () => {
-    expect(formatExpiry(undefined, 2025)).toBe("N/A");
+    expect(formatExpiry(0, 2025)).toBe("N/A");
   });
 
   it("returns N/A when year missing", () => {
-    expect(formatExpiry(12, undefined)).toBe("N/A");
+    expect(formatExpiry(12, 0)).toBe("N/A");
   });
 });
 
@@ -56,7 +56,7 @@ describe("formatDate", () => {
   });
 
   it("returns empty string for undefined", () => {
-    expect(formatDate(undefined)).toBe("");
+    expect(formatDate()).toBe("");
   });
 
   it("returns empty string for empty string", () => {

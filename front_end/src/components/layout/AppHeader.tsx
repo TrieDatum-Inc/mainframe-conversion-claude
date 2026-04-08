@@ -4,8 +4,8 @@ import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/auth-store";
 
 interface AppHeaderProps {
-  title: string;
-  subtitle?: string;
+  readonly title: string;
+  readonly subtitle?: string;
 }
 
 export function AppHeader({ title, subtitle }: AppHeaderProps) {

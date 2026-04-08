@@ -3,8 +3,8 @@
 import { formatCurrency } from "@/lib/utils";
 
 interface CurrencyDisplayProps {
-  amount: number;
-  className?: string;
+  readonly amount: number;
+  readonly className?: string;
 }
 
 export function CurrencyDisplay({ amount, className = "" }: CurrencyDisplayProps) {

@@ -207,8 +207,9 @@ function CardUpdateContent() {
 
                 {/* Editable fields (UNPROT) */}
                 <div>
-                  <label className="block text-mainframe-dim mb-1">EMBOSSED NAME:</label>
+                  <label htmlFor="card-embossed-name" className="block text-mainframe-dim mb-1">EMBOSSED NAME:</label>
                   <input
+                    id="card-embossed-name"
                     {...register("card_embossed_name")}
                     type="text"
                     maxLength={50}
@@ -226,8 +227,9 @@ function CardUpdateContent() {
                 </div>
 
                 <div>
-                  <label className="block text-mainframe-dim mb-1">STATUS:</label>
+                  <label htmlFor="card-active-status" className="block text-mainframe-dim mb-1">STATUS:</label>
                   <select
+                    id="card-active-status"
                     {...register("active_status")}
                     className="px-2 py-1 text-sm w-24"
                   >
@@ -243,8 +245,9 @@ function CardUpdateContent() {
 
                 <div className="flex space-x-6">
                   <div>
-                    <label className="block text-mainframe-dim mb-1">EXP MONTH (1-12):</label>
+                    <label htmlFor="card-exp-month" className="block text-mainframe-dim mb-1">EXP MONTH (1-12):</label>
                     <input
+                      id="card-exp-month"
                       {...register("expiration_month")}
                       type="number"
                       min={1}
@@ -259,8 +262,9 @@ function CardUpdateContent() {
                   </div>
 
                   <div>
-                    <label className="block text-mainframe-dim mb-1">EXP YEAR (1950-2099):</label>
+                    <label htmlFor="card-exp-year" className="block text-mainframe-dim mb-1">EXP YEAR (1950-2099):</label>
                     <input
+                      id="card-exp-year"
                       {...register("expiration_year")}
                       type="number"
                       min={1950}
@@ -316,9 +320,9 @@ function ReadOnlyField({
   value,
   mono = false,
 }: {
-  label: string;
-  value: string;
-  mono?: boolean;
+  readonly label: string;
+  readonly value: string;
+  readonly mono?: boolean;
 }) {
   return (
     <div className="flex">

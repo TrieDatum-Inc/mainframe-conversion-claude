@@ -1,7 +1,7 @@
 "use client";
 
 interface LoadingSpinnerProps {
-  message?: string;
+  readonly message?: string;
 }
 
 export function LoadingSpinner({ message = "PROCESSING..." }: LoadingSpinnerProps) {

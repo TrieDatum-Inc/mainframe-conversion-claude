@@ -52,7 +52,7 @@ function CardListContent() {
       };
       const aid = accountFilter.trim();
       if (aid) {
-        params.account_id = parseInt(aid, 10);
+        params.account_id = Number.parseInt(aid, 10);
       }
       const data = await listCards(params);
       setResponse(data);
@@ -84,8 +84,9 @@ function CardListContent() {
         {/* Filter bar */}
         <form onSubmit={handleFilter} className="border border-mainframe-border p-4 mb-4">
           <div className="flex items-center space-x-4">
-            <label className="text-mainframe-dim text-xs w-28">FILTER BY ACCT:</label>
+            <label htmlFor="account-filter" className="text-mainframe-dim text-xs w-28">FILTER BY ACCT:</label>
             <input
+              id="account-filter"
               type="text"
               value={accountFilter}
               onChange={(e) => setAccountFilter(e.target.value)}
@@ -146,12 +147,19 @@ function CardListContent() {
               {response.items.map((card: CardListItem, idx: number) => (
                 <div
                   key={card.card_number}
+                  role="button"
+                  tabIndex={0}
                   className={`grid grid-cols-6 gap-2 px-3 py-2 text-xs cursor-pointer hover:bg-mainframe-panel transition-colors ${
                     idx % 2 === 0 ? "" : "bg-mainframe-header"
                   }`}
                   onClick={() =>
                     router.push(`/cards/view?card_number=${card.card_number}`)
                   }
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      router.push(`/cards/view?card_number=${card.card_number}`);
+                    }
+                  }}
                 >
                   <span className="text-mainframe-info font-mono">
                     {card.card_number_masked}
