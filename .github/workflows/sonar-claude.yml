@@ -1,0 +1,68 @@
+name: Sonar + Claude Fix
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    path-ignores:
+      - sonar_issues.json
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  sonar-claude:
+    name: SonarQube + Claude Comment
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.head_ref }}
+
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@dcc5211de53084482f1c6779dda263459f5274f6
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      - name: Fetch Sonar Issues
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          curl -s -u $SONAR_TOKEN: \
+          "https://sonarcloud.io/api/issues/search?componentKeys=TrieDatum-Inc_mainframe-conversion-claude&pullRequest=${PR_NUMBER}" \
+          | jq '.' > sonar_issues.json
+
+      - name: Comment Sonar Issues on PR tagging Claude
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          ISSUE_COUNT=$(jq '.total // 0' sonar_issues.json)
+
+          if [ "$ISSUE_COUNT" -eq 0 ]; then
+            echo "No Sonar issues found. Skipping comment."
+            exit 0
+          fi
+
+          # Build the issues summary
+          ISSUES_BODY=$(jq -r '
+            .issues[] |
+            "- **[\(.severity)] \(.type)**: `\(.component | split(":") | last)` (line \(.line // "N/A"))\n  \(.message)\n  Rule: `\(.rule)`\n"
+          ' sonar_issues.json)
+
+          # Create the comment body
+          COMMENT_BODY=$(cat <<EOF
+          @claude SonarQube found **${ISSUE_COUNT} issue(s)** in this PR. Please review and suggest fixes for each issue below.
+
+          ## SonarQube Issues
+
+          ${ISSUES_BODY}
+
+          Please provide code fixes or recommendations for each issue.
+          EOF
+          )
+
+          gh pr comment "$PR_NUMBER" --body "$COMMENT_BODY"

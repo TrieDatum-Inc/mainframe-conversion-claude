@@ -6,3 +6,41 @@ batch-app/markers/*
 /.idea/
 .DS_Store
 **/.DS_Store
+**/node_modules/
+**/.next/
+**/.swc/
+
+# Claude / local tooling
+.claude/
+.aider*
+
+# Backup & temp files
+*_bck.*
+*.bak
+*.tmp
+*.swp
+*~
+
+# Python
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Build / dist
+dist/
+build/
+*.log
