@@ -19,7 +19,7 @@ batch-app/markers/*
 *.bak
 *.tmp
 *.swp
-*~
+
 
 # Python
 __pycache__/
