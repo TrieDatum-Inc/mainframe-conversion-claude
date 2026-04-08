@@ -157,8 +157,9 @@ function CardUpdateContent() {
         {/* Search */}
         <form onSubmit={handleSearch} className="border border-mainframe-border p-4 mb-4">
           <div className="flex items-center space-x-4">
-            <label className="text-mainframe-dim text-xs w-24">CARD NUM:</label>
+            <label htmlFor="card-num-search" className="text-mainframe-dim text-xs w-24">CARD NUM:</label>
             <input
+              id="card-num-search"
               type="text"
               value={cardNumberInput}
               onChange={(e) => setCardNumberInput(e.target.value)}

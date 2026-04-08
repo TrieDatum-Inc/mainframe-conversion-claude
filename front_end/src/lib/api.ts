@@ -26,7 +26,7 @@ const apiClient: AxiosInstance = axios.create({
 
 // Attach JWT from localStorage on every request
 apiClient.interceptors.request.use((config) => {
-  if (typeof window !== "undefined") {
+  if (typeof globalThis.window !== "undefined") {
     const token = localStorage.getItem("access_token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;

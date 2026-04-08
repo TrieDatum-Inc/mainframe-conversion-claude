@@ -78,11 +78,10 @@ export default function MenuPage() {
 
           <div className="space-y-3">
             {MENU_OPTIONS.map((option) => (
-              <div
+              <button
                 key={option.key}
-                role="button"
-                tabIndex={0}
-                className="flex items-start space-x-4 group cursor-pointer hover:bg-mainframe-panel p-2 transition-colors"
+                type="button"
+                className="flex items-start space-x-4 group cursor-pointer hover:bg-mainframe-panel p-2 transition-colors w-full text-left"
                 onClick={() => router.push(option.href)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {
@@ -101,7 +100,7 @@ export default function MenuPage() {
                     {option.description}
                   </p>
                 </div>
-              </div>
+              </button>
             ))}
           </div>
 

@@ -19,6 +19,11 @@ from app.services.user_service import (
     update_user,
 )
 
+# Test-only credential constants — not real secrets  # noqa: S105
+_TEST_PWD = "Pass1234"      # noqa: S105
+_PLAIN_PWD = "PlainPas"     # noqa: S105
+_NEW_PWD = "NewPass1"       # noqa: S105
+
 
 def _make_user(
     user_id: str = "USER0001",
@@ -154,7 +159,7 @@ class TestCreateUser:
             user_id="newuser1",
             first_name="Bob",
             last_name="Smith",
-            password="Pass1234",
+            password=_TEST_PWD,
             user_type="U",
         )
 
@@ -171,7 +176,7 @@ class TestCreateUser:
         db = AsyncMock()
         captured_user = None
 
-        async def _capture_create(user):
+        def _capture_create(user):
             nonlocal captured_user
             captured_user = user
             mock_created = _make_user(user.user_id)
@@ -182,7 +187,7 @@ class TestCreateUser:
             user_id="lower123",   # 8 chars lowercase
             first_name="Bob",
             last_name="Smith",
-            password="Pass1234",
+            password=_TEST_PWD,
             user_type="U",
         )
 
@@ -199,7 +204,7 @@ class TestCreateUser:
         db = AsyncMock()
         captured_user = None
 
-        async def _capture(user):
+        def _capture(user):
             nonlocal captured_user
             captured_user = user
             return _make_user()
@@ -209,7 +214,7 @@ class TestCreateUser:
             user_id="USER0001",
             first_name="Bob",
             last_name="Smith",
-            password="PlainPas",   # 8 chars
+            password=_PLAIN_PWD,   # 8 chars
             user_type="U",
         )
 
@@ -218,7 +223,7 @@ class TestCreateUser:
             mock_repo.create = AsyncMock(side_effect=_capture)
             await create_user(request, db)
 
-        assert captured_user.password_hash != "PlainPas"
+        assert captured_user.password_hash != _PLAIN_PWD
         assert captured_user.password_hash.startswith("$2")  # bcrypt prefix
 
     @pytest.mark.asyncio
@@ -230,14 +235,14 @@ class TestCreateUser:
             user_id="EXISTING",
             first_name="Bob",
             last_name="Smith",
-            password="Pass1234",
+            password=_TEST_PWD,
             user_type="U",
         )
 
         with patch("app.services.user_service.UserRepository") as mock_cls:
             mock_repo = mock_cls.return_value
             mock_repo.create = AsyncMock(
-                side_effect=IntegrityError("", {}, Exception("dup"))
+                side_effect=IntegrityError("", {}, RuntimeError("dup"))
             )
 
             with pytest.raises(DuplicateResourceError) as exc_info:
@@ -281,7 +286,7 @@ class TestUpdateUser:
             first_name="Alice",
             last_name="Johnson",
             user_type="U",
-            password="NewPass1",
+            password=_NEW_PWD,
         )
 
         with patch("app.services.user_service.UserRepository") as mock_cls:

@@ -25,14 +25,14 @@ export const useAuthStore = create<AuthState>()(
 
       setAuth: (token: string, username: string, role: string) => {
         // Also write to localStorage so the axios interceptor can read it
-        if (typeof window !== "undefined") {
+        if (typeof globalThis.window !== "undefined") {
           localStorage.setItem("access_token", token);
         }
         set({ accessToken: token, username, role, isAuthenticated: true });
       },
 
       clearAuth: () => {
-        if (typeof window !== "undefined") {
+        if (typeof globalThis.window !== "undefined") {
           localStorage.removeItem("access_token");
         }
         set({ accessToken: null, username: null, role: null, isAuthenticated: false });

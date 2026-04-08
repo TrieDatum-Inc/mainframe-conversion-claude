@@ -96,7 +96,7 @@ class TestUserRepository:
         self, db_session: AsyncSession, admin_user: User, regular_user: User
     ):
         repo = UserRepository(db_session)
-        users, total = await repo.list_paginated(
+        users, _ = await repo.list_paginated(
             page=1, page_size=100, user_id_filter="ADMIN"
         )
         ids = [u.user_id for u in users]
@@ -263,7 +263,7 @@ class TestCreditCardRepository:
     ):
         repo = CreditCardRepository(db_session)
         prefix = sample_card.card_number[:6]
-        cards, total = await repo.list_by_filters(
+        _, total = await repo.list_by_filters(
             page=1, page_size=100, card_number_prefix=prefix
         )
         assert total >= 1
@@ -287,7 +287,7 @@ class TestCreditCardRepository:
         await db_session.flush()
 
         repo = CreditCardRepository(db_session)
-        cards, total = await repo.list_by_filters(
+        cards, _ = await repo.list_by_filters(
             page=1, page_size=2, account_id=sample_account.account_id
         )
         assert len(cards) <= 2

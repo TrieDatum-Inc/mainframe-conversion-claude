@@ -145,11 +145,10 @@ function CardListContent() {
               )}
 
               {response.items.map((card: CardListItem, idx: number) => (
-                <div
+                <button
                   key={card.card_number}
-                  role="button"
-                  tabIndex={0}
-                  className={`grid grid-cols-6 gap-2 px-3 py-2 text-xs cursor-pointer hover:bg-mainframe-panel transition-colors ${
+                  type="button"
+                  className={`grid grid-cols-6 gap-2 px-3 py-2 text-xs cursor-pointer hover:bg-mainframe-panel transition-colors w-full text-left ${
                     idx % 2 === 0 ? "" : "bg-mainframe-header"
                   }`}
                   onClick={() =>
@@ -174,7 +173,7 @@ function CardListContent() {
                   <span>
                     <StatusBadge status={card.active_status} />
                   </span>
-                </div>
+                </button>
               ))}
             </div>
 

@@ -29,9 +29,13 @@ from app.models.user import User
 from app.utils.security import hash_password
 
 
-# Login-specific fixtures with passwords that respect the 8-char COBOL constraint
-_LOGIN_ADMIN_PASSWORD = "Admin123"  # 8 chars
-_LOGIN_USER_PASSWORD = "User1234"   # 8 chars
+# Login-specific fixtures — test-only credentials, not real secrets
+_LOGIN_ADMIN_PWD = "Admin123"  # noqa: S105 — 8 chars, COBOL PASSWDI constraint
+_LOGIN_USER_PWD = "User1234"   # noqa: S105 — 8 chars
+_WRONG_PWD = "WrongPas"        # noqa: S105 — intentionally wrong for 401 tests
+_UNKNOWN_PWD = "Pass1234"      # noqa: S105 — used for unknown-user and create tests
+_NEW_USER_PWD = "Pass1234"     # noqa: S105 — password for new-user creation tests
+_DELETE_TMP_PWD = "pass"       # noqa: S105 — throwaway password for delete test
 
 
 @pytest.fixture
@@ -41,7 +45,7 @@ async def login_admin(db_session: AsyncSession) -> User:
         user_id="LGNADM01",
         first_name="Login",
         last_name="Admin",
-        password_hash=hash_password(_LOGIN_ADMIN_PASSWORD),
+        password_hash=hash_password(_LOGIN_ADMIN_PWD),
         user_type="A",
     )
     db_session.add(user)
@@ -57,7 +61,7 @@ async def login_user(db_session: AsyncSession) -> User:
         user_id="LGNUSR01",
         first_name="Login",
         last_name="User",
-        password_hash=hash_password(_LOGIN_USER_PASSWORD),
+        password_hash=hash_password(_LOGIN_USER_PWD),
         user_type="U",
     )
     db_session.add(user)
@@ -77,7 +81,7 @@ class TestLoginEndpoint:
     ):
         resp = await client.post(
             "/api/v1/auth/login",
-            json={"user_id": login_admin.user_id, "password": _LOGIN_ADMIN_PASSWORD},
+            json={"user_id": login_admin.user_id, "password": _LOGIN_ADMIN_PWD},
         )
         assert resp.status_code == 200
         data = resp.json()
@@ -91,7 +95,7 @@ class TestLoginEndpoint:
     ):
         resp = await client.post(
             "/api/v1/auth/login",
-            json={"user_id": login_admin.user_id, "password": "WrongPas"},
+            json={"user_id": login_admin.user_id, "password": _WRONG_PWD},
         )
         assert resp.status_code == 401
         data = resp.json()
@@ -101,7 +105,7 @@ class TestLoginEndpoint:
     async def test_login_unknown_user_returns_401(self, client: AsyncClient):
         resp = await client.post(
             "/api/v1/auth/login",
-            json={"user_id": "UNKNOWN1", "password": "Pass1234"},
+            json={"user_id": "UNKNOWN1", "password": _UNKNOWN_PWD},
         )
         assert resp.status_code == 401
         data = resp.json()
@@ -114,7 +118,7 @@ class TestLoginEndpoint:
     ):
         resp = await client.post(
             "/api/v1/auth/login",
-            json={"user_id": login_admin.user_id, "password": _LOGIN_ADMIN_PASSWORD},
+            json={"user_id": login_admin.user_id, "password": _LOGIN_ADMIN_PWD},
         )
         assert resp.status_code == 200
         assert resp.json()["redirect_to"] == "/admin/menu"
@@ -125,7 +129,7 @@ class TestLoginEndpoint:
     ):
         resp = await client.post(
             "/api/v1/auth/login",
-            json={"user_id": login_user.user_id, "password": _LOGIN_USER_PASSWORD},
+            json={"user_id": login_user.user_id, "password": _LOGIN_USER_PWD},
         )
         assert resp.status_code == 200
         assert resp.json()["redirect_to"] == "/menu"
@@ -308,7 +312,7 @@ class TestCreateUserEndpoint:
                 "user_id": "NEWU0001",
                 "first_name": "New",
                 "last_name": "User",
-                "password": "Pass1234",
+                "password": _NEW_USER_PWD,
                 "user_type": "U",
             },
         )
@@ -328,7 +332,7 @@ class TestCreateUserEndpoint:
                 "user_id": "NEWU0001",
                 "first_name": "New",
                 "last_name": "User",
-                "password": "Pass1234",
+                "password": _NEW_USER_PWD,
                 "user_type": "U",
             },
         )
@@ -346,7 +350,7 @@ class TestCreateUserEndpoint:
                 "user_id": admin_user.user_id,
                 "first_name": "Dup",
                 "last_name": "User",
-                "password": "Pass1234",
+                "password": _NEW_USER_PWD,
                 "user_type": "U",
             },
         )
@@ -365,7 +369,7 @@ class TestCreateUserEndpoint:
                 "user_id": "NEWU0001",
                 "first_name": "New",
                 "last_name": "User",
-                "password": "Pass1234",
+                "password": _NEW_USER_PWD,
                 "user_type": "X",  # invalid — only A or U
             },
         )
@@ -433,7 +437,7 @@ class TestDeleteUserEndpoint:
             user_id="DELTMP01",
             first_name="Del",
             last_name="Temp",
-            password_hash=hash_password("pass"),
+            password_hash=hash_password(_DELETE_TMP_PWD),
             user_type="U",
         )
         db_session.add(user)

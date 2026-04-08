@@ -147,7 +147,7 @@ def _make_test_app() -> FastAPI:
 
     @test_app.get("/integrity")
     async def _integrity():
-        raise IntegrityError("", {}, Exception("dup"))
+        raise IntegrityError("", {}, RuntimeError("dup"))
 
     @test_app.get("/base-exception")
     async def _base():
@@ -159,7 +159,7 @@ def _make_test_app() -> FastAPI:
 @pytest.fixture
 async def handler_client():
     app = _make_test_app()
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="https://testserver") as ac:
         yield ac
 
 
