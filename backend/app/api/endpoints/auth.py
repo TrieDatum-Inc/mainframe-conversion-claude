@@ -29,6 +29,7 @@ from app.utils.security import decode_access_token
 # @limiter.limit() decorator below. A locally constructed second Limiter
 # instance would not share state with app.state.limiter, silently defeating
 # the rate limit. The shared module pattern prevents this mistake.
+from app.config import settings
 from app.utils.rate_limit import limiter
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -41,13 +42,13 @@ security_scheme = HTTPBearer()
 # from a private/loopback address (i.e., a reverse proxy we control).
 # Any client can forge this header; accepting it unconditionally allows
 # per-IP rate limiting to be bypassed by cycling through arbitrary IPs.
+#
+# The list is derived from settings.TRUSTED_PROXY_CIDRS so operators can
+# override the defaults via the TRUSTED_PROXY_CIDRS environment variable
+# without touching source code (addresses SonarQube security hotspot).
 # ---------------------------------------------------------------------------
 _TRUSTED_PROXY_NETS = [
-    ipaddress.ip_network("127.0.0.0/8"),    # loopback
-    ipaddress.ip_network("10.0.0.0/8"),     # RFC 1918
-    ipaddress.ip_network("172.16.0.0/12"),  # RFC 1918
-    ipaddress.ip_network("192.168.0.0/16"), # RFC 1918
-    ipaddress.ip_network("::1/128"),        # IPv6 loopback
+    ipaddress.ip_network(cidr) for cidr in settings.TRUSTED_PROXY_CIDRS
 ]
 
 

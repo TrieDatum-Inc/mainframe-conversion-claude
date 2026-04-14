@@ -209,3 +209,17 @@ class TestAuthEndpointClientIp:
 
         ip = _get_client_ip(request)
         assert ip == "2001:db8::1"
+
+    def test_trusted_proxy_nets_reflects_settings_cidrs(self):
+        """
+        _TRUSTED_PROXY_NETS is derived from settings.TRUSTED_PROXY_CIDRS so
+        that the module-level list matches whatever the operator has configured.
+        This test verifies that every CIDR in settings is represented as an
+        ip_network object in _TRUSTED_PROXY_NETS (no hard-coded divergence).
+        """
+        import ipaddress
+        from app.config import settings
+        from app.api.endpoints.auth import _TRUSTED_PROXY_NETS
+
+        expected = [ipaddress.ip_network(cidr) for cidr in settings.TRUSTED_PROXY_CIDRS]
+        assert _TRUSTED_PROXY_NETS == expected

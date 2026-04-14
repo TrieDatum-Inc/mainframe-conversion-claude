@@ -87,3 +87,35 @@ class TestSettingsValidation:
         # In test environment DEBUG=True is set by conftest.py
         assert settings.ALGORITHM == "HS256"
         assert settings.BCRYPT_ROUNDS > 0
+
+    def test_trusted_proxy_cidrs_default_covers_rfc1918_and_loopback(self):
+        """
+        TRUSTED_PROXY_CIDRS defaults contain the expected RFC 1918 and
+        loopback ranges so the out-of-box behaviour is unchanged.
+        """
+        from app.config import Settings, _SECRET_KEY_SENTINEL
+
+        s = Settings(DEBUG=True, SECRET_KEY=_SECRET_KEY_SENTINEL)
+        assert "127.0.0.0/8" in s.TRUSTED_PROXY_CIDRS
+        assert "10.0.0.0/8" in s.TRUSTED_PROXY_CIDRS
+        assert "172.16.0.0/12" in s.TRUSTED_PROXY_CIDRS
+        assert "192.168.0.0/16" in s.TRUSTED_PROXY_CIDRS
+        assert "::1/128" in s.TRUSTED_PROXY_CIDRS
+
+    def test_trusted_proxy_cidrs_can_be_overridden(self):
+        """
+        TRUSTED_PROXY_CIDRS can be replaced via constructor (simulating the
+        TRUSTED_PROXY_CIDRS environment variable) so operators can restrict or
+        expand the trusted range without changing source code.
+        """
+        from app.config import Settings, _SECRET_KEY_SENTINEL
+
+        custom_cidrs = ["192.0.2.0/24", "198.51.100.0/24"]
+        s = Settings(
+            DEBUG=True,
+            SECRET_KEY=_SECRET_KEY_SENTINEL,
+            TRUSTED_PROXY_CIDRS=custom_cidrs,
+        )
+        assert s.TRUSTED_PROXY_CIDRS == custom_cidrs
+        # Default ranges must not appear when explicitly overridden
+        assert "10.0.0.0/8" not in s.TRUSTED_PROXY_CIDRS
