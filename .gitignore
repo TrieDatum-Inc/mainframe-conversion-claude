@@ -6,3 +6,20 @@ batch-app/markers/*
 /.idea/
 .DS_Store
 **/.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+.env
+backend/coverage.xml
+backend/.coverage
+backend/htmlcov/
+
+# Node / Next.js
+node_modules/
+.next/
+front_end/coverage/
+
+# Claude Code
+.claude/
+.mcp.json

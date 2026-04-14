@@ -21,6 +21,57 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.head_ref }}
 
+      # -----------------------------------------------------------------------
+      # Backend: install dependencies and generate coverage report
+      # SonarQube needs coverage.xml before the scan runs so it can attach
+      # per-line coverage data to the analysis results.
+      # -----------------------------------------------------------------------
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Poetry
+        run: pip install poetry
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: poetry install --no-interaction
+
+      - name: Run backend tests and generate coverage XML
+        working-directory: backend
+        env:
+          DEBUG: "true"
+          BLACKLIST_BACKEND: "memory"
+        run: |
+          poetry run pytest tests/ \
+            --cov=app \
+            --cov-report=xml:coverage.xml \
+            --cov-report=term-missing \
+            -q
+
+      # -----------------------------------------------------------------------
+      # Frontend: install dependencies and generate lcov coverage report
+      # SonarQube reads front_end/coverage/lcov.info for JS/TS coverage.
+      # -----------------------------------------------------------------------
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install frontend dependencies
+        working-directory: front_end
+        run: npm ci
+
+      - name: Run frontend tests and generate lcov coverage
+        working-directory: front_end
+        run: |
+          npm test -- \
+            --coverage \
+            --coverageReporters=lcov \
+            --coverageReporters=text \
+            --passWithNoTests
+
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@dcc5211de53084482f1c6779dda263459f5274f6
         env:
