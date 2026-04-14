@@ -45,7 +45,7 @@ const loginSchema = z.object({
     .max(8, "User ID must be 8 characters or less"),
   password: z
     .string()
-    .min(1, "Password is required")
+    .min(8, "Password must be at least 8 characters")
     .max(72, "Password must be 72 characters or less"),
 });
 
@@ -212,6 +212,9 @@ export default function LoginPage() {
                       className="block text-sm font-medium text-slate-700 mb-1"
                     >
                       Password
+                      <span className="text-slate-400 font-normal ml-1">
+                        (8 characters min)
+                      </span>
                     </label>
                     <input
                       id="password"

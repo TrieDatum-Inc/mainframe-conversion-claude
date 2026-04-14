@@ -13,12 +13,12 @@ from typing import List
 
 # The sentinel value used as the development default.
 # Intentionally left as a visible constant so deployment checks can reference it.
-_SECRET_KEY_SENTINEL = "change-me-in-production-use-at-least-32-random-chars"
+_SECRET_KEY_SENTINEL = "8a3682128ef6683f406fcfecffbb515b0e702e009b1ef6d276029e68224a923e"
 
 
 class Settings(BaseSettings):
     # Database
-    DATABASE_URL: str = "postgresql+asyncpg://carddemo:carddemo@localhost/carddemo"
+    DATABASE_URL: str = "postgresql+asyncpg://mridul:mridul12345&@localhost/carddemo_11"
 
     # JWT
     SECRET_KEY: str = _SECRET_KEY_SENTINEL

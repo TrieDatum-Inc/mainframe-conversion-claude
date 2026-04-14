@@ -134,7 +134,7 @@ describe("LoginPage", () => {
       await user.click(screen.getByRole("button", { name: /sign on/i }));
 
       await waitFor(() => {
-        expect(screen.getByText(/password is required/i)).toBeInTheDocument();
+        expect(screen.getByText(/password must be at least 8 characters/i)).toBeInTheDocument();
       });
     });
 
@@ -177,13 +177,13 @@ describe("LoginPage", () => {
       renderLoginPage();
 
       await user.type(screen.getByLabelText(/user id/i), "ADMIN001");
-      await user.type(screen.getByLabelText(/password/i), "AdminPass1!");
+      await user.type(screen.getByLabelText(/password/i), "Admin01!");
       await user.click(screen.getByRole("button", { name: /sign on/i }));
 
       await waitFor(() => {
         expect(mockApiPost).toHaveBeenCalledWith(
           "/api/v1/auth/login",
-          { user_id: "ADMIN001", password: "AdminPass1!" }
+          { user_id: "ADMIN001", password: "Admin01!" }
         );
       });
     });
@@ -194,7 +194,7 @@ describe("LoginPage", () => {
       renderLoginPage();
 
       await user.type(screen.getByLabelText(/user id/i), "ADMIN001");
-      await user.type(screen.getByLabelText(/password/i), "AdminPass1!");
+      await user.type(screen.getByLabelText(/password/i), "Admin01!");
       await user.click(screen.getByRole("button", { name: /sign on/i }));
 
       await waitFor(() => {
@@ -208,7 +208,7 @@ describe("LoginPage", () => {
       renderLoginPage();
 
       await user.type(screen.getByLabelText(/user id/i), "USER0001");
-      await user.type(screen.getByLabelText(/password/i), "UserPass1!");
+      await user.type(screen.getByLabelText(/password/i), "User001!");
       await user.click(screen.getByRole("button", { name: /sign on/i }));
 
       await waitFor(() => {
@@ -222,7 +222,7 @@ describe("LoginPage", () => {
       renderLoginPage();
 
       await user.type(screen.getByLabelText(/user id/i), "ADMIN001");
-      await user.type(screen.getByLabelText(/password/i), "AdminPass1!");
+      await user.type(screen.getByLabelText(/password/i), "Admin01!");
       await user.click(screen.getByRole("button", { name: /sign on/i }));
 
       await waitFor(() => {
@@ -240,7 +240,7 @@ describe("LoginPage", () => {
       renderLoginPage();
 
       await user.type(screen.getByLabelText(/user id/i), "ADMIN001");
-      await user.type(screen.getByLabelText(/password/i), "WrongPassword");
+      await user.type(screen.getByLabelText(/password/i), "WrongPwd");
       await user.click(screen.getByRole("button", { name: /sign on/i }));
 
       await waitFor(() => {
@@ -258,7 +258,7 @@ describe("LoginPage", () => {
       renderLoginPage();
 
       await user.type(screen.getByLabelText(/user id/i), "ADMIN001");
-      await user.type(screen.getByLabelText(/password/i), "somepassword");
+      await user.type(screen.getByLabelText(/password/i), "somepwd1");
       await user.click(screen.getByRole("button", { name: /sign on/i }));
 
       await waitFor(() => {
@@ -279,7 +279,7 @@ describe("LoginPage", () => {
       const { unmount } = renderLoginPage();
 
       await user1.type(screen.getByLabelText(/user id/i), "NOPE9999");
-      await user1.type(screen.getByLabelText(/password/i), "anything");
+      await user1.type(screen.getByLabelText(/password/i), "anythng1");
       await user1.click(screen.getByRole("button", { name: /sign on/i }));
 
       const errorText1 = await screen.findByText(/invalid user id or password/i);
@@ -292,7 +292,7 @@ describe("LoginPage", () => {
       renderLoginPage();
 
       await user2.type(screen.getByLabelText(/user id/i), "ADMIN001");
-      await user2.type(screen.getByLabelText(/password/i), "WrongPass!");
+      await user2.type(screen.getByLabelText(/password/i), "WrongPw!");
       await user2.click(screen.getByRole("button", { name: /sign on/i }));
 
       const errorText2 = await screen.findByText(/invalid user id or password/i);

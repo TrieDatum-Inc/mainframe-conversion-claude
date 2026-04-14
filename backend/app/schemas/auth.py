@@ -30,9 +30,9 @@ class LoginRequest(BaseModel):
     )
     password: str = Field(
         ...,
-        min_length=1,
+        min_length=8,
         max_length=72,
-        description="Password — maps PASSWDI field; extended from 8 to 72 chars (bcrypt limit)",
+        description="Password — maps PASSWDI field; min 8 chars, max 72 chars (bcrypt limit)",
     )
 
     @field_validator("user_id")

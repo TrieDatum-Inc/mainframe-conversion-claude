@@ -17,6 +17,7 @@ pydantic = "^2.7.1"
 pydantic-settings = "^2.2.1"
 python-jose = {extras = ["cryptography"], version = "^3.3.0"}
 passlib = {extras = ["bcrypt"], version = "^1.7.4"}
+bcrypt = ">=3.1.0,<4.1"  # passlib 1.7.4 is incompatible with bcrypt >=4.1
 slowapi = "^0.1.9"
 structlog = "^24.1.0"
 

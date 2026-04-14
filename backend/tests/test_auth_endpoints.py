@@ -22,7 +22,7 @@ class TestLoginEndpoint:
         """Admin user with correct credentials → 200 with JWT token."""
         response = await client.post(
             "/api/v1/auth/login",
-            json={"user_id": "ADMIN001", "password": "AdminPass1!"},
+            json={"user_id": "ADMIN001", "password": "Admin01!"},
         )
         assert response.status_code == 200
         data = response.json()
@@ -39,7 +39,7 @@ class TestLoginEndpoint:
         """Regular user with correct credentials → 200 with redirect to /menu."""
         response = await client.post(
             "/api/v1/auth/login",
-            json={"user_id": "USER0001", "password": "UserPass1!"},
+            json={"user_id": "USER0001", "password": "User001!"},
         )
         assert response.status_code == 200
         data = response.json()
@@ -55,7 +55,7 @@ class TestLoginEndpoint:
         """Non-existent user_id → 401 INVALID_CREDENTIALS."""
         response = await client.post(
             "/api/v1/auth/login",
-            json={"user_id": "NOBODY", "password": "anything"},
+            json={"user_id": "NOBODY", "password": "anything1"},
         )
         assert response.status_code == 401
         data = response.json()
@@ -68,7 +68,7 @@ class TestLoginEndpoint:
         """Correct user_id, wrong password → 401 INVALID_CREDENTIALS."""
         response = await client.post(
             "/api/v1/auth/login",
-            json={"user_id": "ADMIN001", "password": "WrongPassword!"},
+            json={"user_id": "ADMIN001", "password": "WrongPw1!"},
         )
         assert response.status_code == 401
         data = response.json()
@@ -86,11 +86,11 @@ class TestLoginEndpoint:
         """
         not_found = await client.post(
             "/api/v1/auth/login",
-            json={"user_id": "NOPE9999", "password": "anything"},
+            json={"user_id": "NOPE9999", "password": "anything1"},
         )
         wrong_pwd = await client.post(
             "/api/v1/auth/login",
-            json={"user_id": "ADMIN001", "password": "WrongPass!"},
+            json={"user_id": "ADMIN001", "password": "WrongPw1!"},
         )
         assert not_found.status_code == wrong_pwd.status_code == 401
         assert not_found.json()["error_code"] == wrong_pwd.json()["error_code"]
@@ -133,7 +133,7 @@ class TestLoginEndpoint:
         """
         response = await client.post(
             "/api/v1/auth/login",
-            json={"user_id": "TOOLONGID", "password": "password"},
+            json={"user_id": "TOOLONGID", "password": "password1"},
         )
         assert response.status_code == 422
 
@@ -149,7 +149,7 @@ class TestLoginEndpoint:
         """
         response = await client.post(
             "/api/v1/auth/login",
-            json={"user_id": "ADMIN001", "password": "AdminPass1!"},
+            json={"user_id": "ADMIN001", "password": "Admin01!"},
         )
         response_text = response.text
         assert "password_hash" not in response_text
@@ -170,7 +170,7 @@ class TestLogoutEndpoint:
         """
         login_response = await client.post(
             "/api/v1/auth/login",
-            json={"user_id": "ADMIN001", "password": "AdminPass1!"},
+            json={"user_id": "ADMIN001", "password": "Admin01!"},
         )
         assert login_response.status_code == 200
         token = login_response.json()["access_token"]
@@ -200,7 +200,7 @@ class TestLogoutEndpoint:
         # Use a structurally valid but expired-looking token
         login_response = await client.post(
             "/api/v1/auth/login",
-            json={"user_id": "USER0001", "password": "UserPass1!"},
+            json={"user_id": "USER0001", "password": "User001!"},
         )
         token = login_response.json()["access_token"]
 

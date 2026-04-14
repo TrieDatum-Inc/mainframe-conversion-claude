@@ -27,7 +27,7 @@ class TestAuthServiceLogin:
         COBOL origin: SEC-USR-TYPE='A' → XCTL COADM01C.
         """
         response = await AuthService.login(
-            request=LoginRequest(user_id="ADMIN001", password="AdminPass1!"),
+            request=LoginRequest(user_id="ADMIN001", password="Admin01!"),
             db=db_session,
         )
         assert response.access_token
@@ -48,7 +48,7 @@ class TestAuthServiceLogin:
         COBOL origin: SEC-USR-TYPE != 'A' → XCTL COMEN01C.
         """
         response = await AuthService.login(
-            request=LoginRequest(user_id="USER0001", password="UserPass1!"),
+            request=LoginRequest(user_id="USER0001", password="User001!"),
             db=db_session,
         )
         assert response.access_token
@@ -67,7 +67,7 @@ class TestAuthServiceLogin:
         """
         with pytest.raises(HTTPException) as exc_info:
             await AuthService.login(
-                request=LoginRequest(user_id="NOBODY", password="anything"),
+                request=LoginRequest(user_id="NOBODY", password="anything1"),
                 db=db_session,
             )
         exc = exc_info.value
@@ -86,7 +86,7 @@ class TestAuthServiceLogin:
         """
         with pytest.raises(HTTPException) as exc_info:
             await AuthService.login(
-                request=LoginRequest(user_id="ADMIN001", password="WrongPassword"),
+                request=LoginRequest(user_id="ADMIN001", password="WrongPwd"),
                 db=db_session,
             )
         exc = exc_info.value
@@ -106,12 +106,12 @@ class TestAuthServiceLogin:
         """
         with pytest.raises(HTTPException) as not_found_exc:
             await AuthService.login(
-                request=LoginRequest(user_id="NOBODY99", password="anything"),
+                request=LoginRequest(user_id="NOBODY99", password="anything1"),
                 db=db_session,
             )
         with pytest.raises(HTTPException) as wrong_pwd_exc:
             await AuthService.login(
-                request=LoginRequest(user_id="ADMIN001", password="WrongPass"),
+                request=LoginRequest(user_id="ADMIN001", password="WrongPw1"),
                 db=db_session,
             )
         # Both must be identical — this is the enumeration prevention guarantee
@@ -127,7 +127,7 @@ class TestAuthServiceLogin:
         from app.utils.security import decode_access_token
 
         response = await AuthService.login(
-            request=LoginRequest(user_id="ADMIN001", password="AdminPass1!"),
+            request=LoginRequest(user_id="ADMIN001", password="Admin01!"),
             db=db_session,
         )
         payload = decode_access_token(response.access_token)
@@ -147,7 +147,7 @@ class TestAuthServiceLogin:
         COBOL origin: COSGN00C trims WS-USER-ID with FUNCTION TRIM(USERIDI TRAILING).
         """
         response = await AuthService.login(
-            request=LoginRequest(user_id="ADMIN001", password="AdminPass1!"),
+            request=LoginRequest(user_id="ADMIN001", password="Admin01!"),
             db=db_session,
         )
         assert response.user_id == "ADMIN001"
