@@ -21,6 +21,35 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.head_ref }}
 
+      # -----------------------------------------------------------------------
+      # Backend: install dependencies and generate coverage report
+      # SonarQube needs coverage.xml before the scan runs so it can attach
+      # per-line coverage data to the analysis results.
+      # -----------------------------------------------------------------------
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Poetry
+        run: pip install poetry
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: poetry install --no-interaction
+
+      - name: Run backend tests and generate coverage XML
+        working-directory: backend
+        env:
+          DEBUG: "true"
+          BLACKLIST_BACKEND: "memory"
+        run: |
+          poetry run pytest tests/ \
+            --cov=app \
+            --cov-report=xml:coverage.xml \
+            --cov-report=term-missing \
+            -q
+
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@dcc5211de53084482f1c6779dda263459f5274f6
         env:

@@ -12,15 +12,19 @@ from pydantic import model_validator
 from typing import List
 
 # The sentinel value used as the development default.
-# Intentionally left as a visible constant so deployment checks can reference it.
-_SECRET_KEY_SENTINEL = "8a3682128ef6683f406fcfecffbb515b0e702e009b1ef6d276029e68224a923e"
+# This is a deliberately weak placeholder — it is NOT a real secret.
+# Production deployments MUST override SECRET_KEY with a strong random value.
+# Generate one with: python -c "import secrets; print(secrets.token_hex(32))"
+# The validator below blocks startup if this sentinel is still set when DEBUG=False.
+_SECRET_KEY_SENTINEL = "change-me-in-production-use-at-least-32-random-chars-REPLACE-NOW"
 
 
 class Settings(BaseSettings):
     # Database
-    DATABASE_URL: str = "postgresql+asyncpg://mridul:mridul12345&@localhost/carddemo_11"
+    # Default is a development-only placeholder; production must override via DATABASE_URL env var.
+    DATABASE_URL: str = "postgresql+asyncpg://carddemo_user:changeme@localhost/carddemo_dev"
 
-    # JWT
+    # JWT — must be overridden in production via SECRET_KEY env var
     SECRET_KEY: str = _SECRET_KEY_SENTINEL
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_SECONDS: int = 3600

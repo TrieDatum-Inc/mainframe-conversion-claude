@@ -7,6 +7,13 @@ unit/integration tests; the Alembic migration is applied programmatically.
 """
 
 import asyncio
+import os
+
+# Set DEBUG=True for tests so the SECRET_KEY sentinel validation is not triggered.
+# Tests use a deliberately weak key; production deployments must use a real secret.
+os.environ.setdefault("DEBUG", "true")
+os.environ.setdefault("BLACKLIST_BACKEND", "memory")
+
 from typing import AsyncGenerator
 
 import pytest

@@ -11,6 +11,9 @@ batch-app/markers/*
 __pycache__/
 *.pyc
 .env
+backend/coverage.xml
+backend/.coverage
+backend/htmlcov/
 
 # Node / Next.js
 node_modules/
