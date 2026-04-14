@@ -11,6 +11,7 @@ The router is thin — no business logic lives here. All logic delegates to Auth
 """
 
 import ipaddress
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -74,7 +75,6 @@ def _get_client_ip(request: Request) -> str:
 
 @router.post(
     "/login",
-    response_model=LoginResponse,
     status_code=status.HTTP_200_OK,
     summary="Authenticate user and issue JWT token",
     description=(
@@ -94,7 +94,7 @@ def _get_client_ip(request: Request) -> str:
 async def login(
     request: Request,
     credentials: LoginRequest,
-    db: AsyncSession = Depends(get_db),
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> LoginResponse:
     """
     Authenticate user credentials and issue a JWT access token.
@@ -132,7 +132,7 @@ async def login(
 )
 async def logout(
     request: Request,
-    credentials: HTTPAuthorizationCredentials = Depends(security_scheme),
+    credentials: Annotated[HTTPAuthorizationCredentials, Depends(security_scheme)],
 ) -> None:
     """
     Revoke the current JWT access token.
