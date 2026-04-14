@@ -57,8 +57,34 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 # JWT token management
 # ---------------------------------------------------------------------------
 
-# In-memory token blacklist for logout support.
-# Production deployments should replace this with Redis for distributed state.
+# ---------------------------------------------------------------------------
+# Token blacklist
+# ---------------------------------------------------------------------------
+
+# SECURITY NOTE — PRODUCTION GAP: This is an in-memory blacklist.
+# In a multi-worker deployment (uvicorn --workers N), each worker maintains its
+# own independent set. A logout on worker 1 does NOT revoke the token on workers
+# 2–N. All entries are also lost on process restart (deploy, crash, OOM kill).
+#
+# TODO(production): Replace with a Redis-backed blacklist:
+#   1. Set BLACKLIST_BACKEND=redis and REDIS_URL env vars
+#   2. Swap _token_blacklist operations below for redis.sadd / redis.sismember
+#      with TTL = ACCESS_TOKEN_EXPIRE_SECONDS (auto-evicts expired jtis)
+#
+# For single-worker development/demo deployments this is acceptable.
+import os as _os
+import warnings as _warnings
+
+_BLACKLIST_BACKEND = _os.getenv("BLACKLIST_BACKEND", "memory")
+if _BLACKLIST_BACKEND == "memory" and _os.getenv("DEBUG", "false").lower() != "true":
+    _warnings.warn(
+        "Token blacklist is in-memory. Logout revocation will not work correctly "
+        "across multiple workers or process restarts. "
+        "Set BLACKLIST_BACKEND=redis and REDIS_URL for production deployments.",
+        RuntimeWarning,
+        stacklevel=2,
+    )
+
 _token_blacklist: set[str] = set()
 
 
@@ -104,7 +130,8 @@ def decode_access_token(token: str) -> dict:
     """
     Decode and validate a JWT access token.
 
-    Raises JWTError if the token is invalid, expired, or blacklisted.
+    Raises JWTError if the token is invalid, expired, blacklisted,
+    or carries unexpected claim values.
     """
     payload = jwt.decode(
         token,
@@ -114,6 +141,14 @@ def decode_access_token(token: str) -> dict:
     jti = payload.get("jti")
     if jti and jti in _token_blacklist:
         raise JWTError("Token has been revoked")
+
+    # Validate required claims to prevent unexpected values reaching routing logic.
+    # user_type drives admin/user routing; sub is the authenticated user identity.
+    if not payload.get("sub"):
+        raise JWTError("Missing sub claim")
+    if payload.get("user_type") not in ("A", "U"):
+        raise JWTError("Invalid user_type claim")
+
     return payload
 
 

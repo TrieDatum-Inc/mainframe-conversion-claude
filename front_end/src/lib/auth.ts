@@ -39,6 +39,22 @@ export function isTokenExpired(token: string): boolean {
 
 /**
  * Persist the access token and user identity to localStorage.
+ *
+ * SECURITY NOTE — deliberate trade-off (security review finding #8):
+ * Tokens are stored in localStorage for simplicity in this demo application.
+ * localStorage is readable by any JavaScript on the page, which means an XSS
+ * vulnerability could extract the token (stolen session).
+ *
+ * Production upgrade path: store the access token in an httpOnly, Secure,
+ * SameSite=Strict cookie set by the API server on the login response. The
+ * browser sends it automatically on every request — no JavaScript access to
+ * the raw token at all, eliminating the XSS token-theft vector.
+ * See security specification section 4.3 for the cookie configuration.
+ *
+ * XSS mitigations currently in place (reducing but not eliminating the risk):
+ *   - React JSX auto-escapes all dynamic content (no dangerouslySetInnerHTML)
+ *   - Content-Security-Policy header restricts script sources to 'self'
+ *   - All user-supplied strings rendered as React text nodes (auto-escaped)
  */
 export function storeAuthData(token: string, user: AuthUser): void {
   localStorage.setItem(TOKEN_KEY, token);

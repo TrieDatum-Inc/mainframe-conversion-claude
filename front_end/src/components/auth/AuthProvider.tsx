@@ -88,24 +88,32 @@ export function AuthProvider({ children }: AuthProviderProps) {
    * COBOL origin: Replaces COSGN00C RETURN-TO-PREV-SCREEN (PF3):
    *   bare EXEC CICS RETURN with no TRANSID — terminates the CICS task.
    * The API call is fire-and-forget; local state is cleared regardless.
+   *
+   * Refactoring note (security review finding #7):
+   * The API call is made BEFORE clearAuthData() so that getStoredToken()
+   * inside api.ts buildHeaders() can read the token from localStorage and
+   * inject the Authorization header automatically. The previous ordering
+   * cleared localStorage first, requiring a manual header override that
+   * incorrectly replaced (rather than merged) the built headers, dropping
+   * Content-Type. The new ordering avoids the manual override entirely.
    */
   const logout = useCallback(async () => {
     const currentToken = getStoredToken();
-    clearAuthData();
-    setToken(null);
-    setUser(null);
 
-    // Fire-and-forget the server-side token revocation
+    // Call the server-side revocation BEFORE clearing local state,
+    // so buildHeaders() in api.ts can still read the token.
     if (currentToken) {
       try {
-        await api.post("/api/v1/auth/logout", null, {
-          headers: { Authorization: `Bearer ${currentToken}` },
-        });
+        await api.post("/api/v1/auth/logout", null);
       } catch {
-        // Swallow — local logout already complete
+        // Swallow — local logout must complete regardless of server response.
       }
     }
 
+    // Clear local state after the API call.
+    clearAuthData();
+    setToken(null);
+    setUser(null);
     router.push("/login");
   }, [router]);
 

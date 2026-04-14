@@ -8,8 +8,12 @@ COBOL origin: Replaces CICS system configuration (APPLID, SYSID, file names).
 """
 
 from pydantic_settings import BaseSettings
-from pydantic import field_validator
+from pydantic import model_validator
 from typing import List
+
+# The sentinel value used as the development default.
+# Intentionally left as a visible constant so deployment checks can reference it.
+_SECRET_KEY_SENTINEL = "change-me-in-production-use-at-least-32-random-chars"
 
 
 class Settings(BaseSettings):
@@ -17,7 +21,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql+asyncpg://carddemo:carddemo@localhost/carddemo"
 
     # JWT
-    SECRET_KEY: str = "change-me-in-production-use-at-least-32-random-chars"
+    SECRET_KEY: str = _SECRET_KEY_SENTINEL
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_SECONDS: int = 3600
     REFRESH_TOKEN_EXPIRE_SECONDS: int = 86400
@@ -33,15 +37,28 @@ class Settings(BaseSettings):
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = False
 
-    @field_validator("SECRET_KEY")
-    @classmethod
-    def secret_key_must_be_strong(cls, v: str) -> str:
-        if v == "change-me-in-production-use-at-least-32-random-chars":
-            # Allowed in development; blocked via deployment checks in production
-            return v
-        if len(v) < 32:
+    @model_validator(mode="after")
+    def validate_secret_key(self) -> "Settings":
+        """
+        Block startup when SECRET_KEY is the development sentinel in a
+        non-debug (production) environment.
+
+        Refactoring note (security review finding #3): the original field_validator
+        could not access self.DEBUG, so it allowed the sentinel through in all
+        environments. A model_validator runs after all fields are populated,
+        giving access to both SECRET_KEY and DEBUG together.
+
+        To generate a strong key:
+            python -c "import secrets; print(secrets.token_hex(32))"
+        """
+        if not self.DEBUG and self.SECRET_KEY == _SECRET_KEY_SENTINEL:
+            raise ValueError(
+                "SECRET_KEY must be set to a strong random value when DEBUG=False. "
+                "Generate one with: python -c \"import secrets; print(secrets.token_hex(32))\""
+            )
+        if self.SECRET_KEY != _SECRET_KEY_SENTINEL and len(self.SECRET_KEY) < 32:
             raise ValueError("SECRET_KEY must be at least 32 characters")
-        return v
+        return self
 
     model_config = {
         "env_file": ".env",

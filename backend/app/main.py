@@ -39,6 +39,10 @@ async def lifespan(app: FastAPI):
 
 def create_app() -> FastAPI:
     """Create and configure the FastAPI application."""
+    # Refactoring note (security review finding #4):
+    # docs_url / redoc_url / openapi_url are now gated on settings.DEBUG.
+    # In production (DEBUG=False) all three are set to None, removing the API
+    # schema from the publicly accessible surface area.
     app = FastAPI(
         title=settings.APP_NAME,
         version=settings.APP_VERSION,
@@ -46,8 +50,9 @@ def create_app() -> FastAPI:
             "CardDemo Credit Card Management System — modernized from COBOL/CICS/BMS "
             "mainframe application to FastAPI + PostgreSQL."
         ),
-        docs_url="/docs",
-        redoc_url="/redoc",
+        docs_url="/docs" if settings.DEBUG else None,
+        redoc_url="/redoc" if settings.DEBUG else None,
+        openapi_url="/openapi.json" if settings.DEBUG else None,
         lifespan=lifespan,
     )
 
@@ -64,13 +69,17 @@ def create_app() -> FastAPI:
     # Security headers on every response
     app.add_middleware(SecurityHeadersMiddleware)
 
-    # Rate limiting via slowapi
+    # Rate limiting via slowapi.
+    # Refactoring note (security review finding #1):
+    # The Limiter instance is imported from app.utils.rate_limit so that the
+    # same object is registered on app.state here AND referenced by the
+    # @limiter.limit() decorator in endpoint modules. Two separate Limiter
+    # instances would not share state, silently defeating rate limiting.
     try:
-        from slowapi import Limiter, _rate_limit_exceeded_handler
+        from slowapi import _rate_limit_exceeded_handler
         from slowapi.errors import RateLimitExceeded
-        from slowapi.util import get_remote_address
+        from app.utils.rate_limit import limiter
 
-        limiter = Limiter(key_func=get_remote_address)
         app.state.limiter = limiter
         app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
         logger.info("rate_limiting_enabled")
