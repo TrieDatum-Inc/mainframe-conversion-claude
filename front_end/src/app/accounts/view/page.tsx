@@ -30,7 +30,7 @@
  * Navigation to /accounts/update is via an explicit "Update Account" button.
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -139,13 +139,6 @@ export default function AccountViewPage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [searchedId, setSearchedId] = useState<string>("");
 
-  // Auth guard: redirect to login if no token
-  // COBOL origin: EIBCALEN=0 → XCTL COSGN00C
-  if (typeof window !== "undefined" && !isAuthenticated) {
-    router.push("/login");
-    return null;
-  }
-
   const {
     register,
     handleSubmit,
@@ -154,6 +147,19 @@ export default function AccountViewPage() {
     resolver: zodResolver(searchSchema),
     defaultValues: { accountId: "" },
   });
+
+  // Auth guard: redirect to login if no token
+  // COBOL origin: EIBCALEN=0 → XCTL COSGN00C
+  // Must come AFTER all hooks to comply with React Rules of Hooks.
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.push("/login");
+    }
+  }, [isAuthenticated, router]);
+
+  if (!isAuthenticated) {
+    return null;
+  }
 
   /**
    * Fetch account by ID.

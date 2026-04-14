@@ -485,6 +485,86 @@ describe("api.get", () => {
   });
 });
 
+describe("api.put", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("sends a PUT request with JSON body and returns parsed JSON", async () => {
+    const requestBody = { active_status: "Y", credit_limit: 5000 };
+    const mockData = { account_id: 10000000001, active_status: "Y" };
+    global.fetch = jest.fn().mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => mockData,
+    } as unknown as Response);
+
+    const result = await api.put("/api/v1/accounts/10000000001", requestBody);
+    expect(result).toEqual(mockData);
+
+    const [url, init] = (global.fetch as jest.Mock).mock.calls[0];
+    expect(url).toContain("/api/v1/accounts/10000000001");
+    expect((init as RequestInit).method).toBe("PUT");
+    expect((init as RequestInit).body).toBe(JSON.stringify(requestBody));
+  });
+
+  it("includes Authorization header when token is present in localStorage", async () => {
+    localStorage.setItem("carddemo_token", "test.put.token");
+
+    global.fetch = jest.fn().mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({}),
+    } as unknown as Response);
+
+    await api.put("/api/v1/accounts/1", {});
+
+    const [, init] = (global.fetch as jest.Mock).mock.calls[0];
+    const headers = init.headers as Record<string, string>;
+    expect(headers["Authorization"]).toBe("Bearer test.put.token");
+
+    localStorage.clear();
+  });
+
+  it("throws ApiError on non-ok PUT response", async () => {
+    global.fetch = jest.fn().mockResolvedValueOnce({
+      ok: false,
+      status: 422,
+      json: async () => ({
+        error_code: "NO_CHANGES_DETECTED",
+        message: "No changes detected",
+        details: [],
+      }),
+    } as unknown as Response);
+
+    await expect(
+      api.put("/api/v1/accounts/1", {})
+    ).rejects.toThrow(ApiError);
+  });
+
+  it("throws ApiError with correct status and errorCode on non-ok PUT", async () => {
+    global.fetch = jest.fn().mockResolvedValueOnce({
+      ok: false,
+      status: 422,
+      json: async () => ({
+        error_code: "NO_CHANGES_DETECTED",
+        message: "No changes detected",
+        details: [],
+      }),
+    } as unknown as Response);
+
+    try {
+      await api.put("/api/v1/accounts/1", {});
+    } catch (e) {
+      expect(e).toBeInstanceOf(ApiError);
+      const err = e as ApiError;
+      expect(err.status).toBe(422);
+      expect(err.errorCode).toBe("NO_CHANGES_DETECTED");
+      expect(err.message).toBe("No changes detected");
+    }
+  });
+});
+
 // ---------------------------------------------------------------------------
 // AuthProvider
 // ---------------------------------------------------------------------------

@@ -324,12 +324,6 @@ export default function AccountUpdatePage() {
   const [successMessage, setSuccessMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
-  // Auth guard — COBOL origin: EIBCALEN=0 → XCTL COSGN00C
-  if (typeof window !== "undefined" && !isAuthenticated) {
-    router.push("/login");
-    return null;
-  }
-
   const {
     register,
     handleSubmit,
@@ -338,6 +332,14 @@ export default function AccountUpdatePage() {
   } = useForm<UpdateFormValues>({
     resolver: zodResolver(accountUpdateSchema),
   });
+
+  // Auth guard — COBOL origin: EIBCALEN=0 → XCTL COSGN00C
+  // Must come AFTER all hooks to comply with React Rules of Hooks.
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.push("/login");
+    }
+  }, [isAuthenticated, router]);
 
   /**
    * Auto-load account when accountId query param is present.
@@ -352,6 +354,10 @@ export default function AccountUpdatePage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  if (!isAuthenticated) {
+    return null;
+  }
 
   async function loadAccount(id: string) {
     setLoadState("loading");

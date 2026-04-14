@@ -615,6 +615,173 @@ describe("AccountUpdatePage", () => {
     });
   });
 
+  // ---- Load account error handling ----------------------------------------
+
+  describe("Load account error handling", () => {
+    it("shows 404 error message when account is not found on manual load", async () => {
+      mockApiGet.mockRejectedValueOnce(
+        new ApiError(404, "ACCOUNT_NOT_FOUND", "Account not found")
+      );
+
+      const user = userEvent.setup();
+      render(authenticatedContext(<AccountUpdatePage />));
+
+      const accountInput = screen.getByLabelText(/account number/i);
+      await user.type(accountInput, "99999999999");
+      await user.click(screen.getByRole("button", { name: /load account/i }));
+
+      await waitFor(() => {
+        expect(screen.getByText(/not found/i)).toBeInTheDocument();
+      });
+    });
+
+    it("redirects to /login when load returns 401", async () => {
+      mockApiGet.mockRejectedValueOnce(
+        new ApiError(401, "UNAUTHORIZED", "Unauthorized")
+      );
+
+      const user = userEvent.setup();
+      render(authenticatedContext(<AccountUpdatePage />));
+
+      const accountInput = screen.getByLabelText(/account number/i);
+      await user.type(accountInput, "10000000001");
+      await user.click(screen.getByRole("button", { name: /load account/i }));
+
+      await waitFor(() => {
+        expect(mockRouterPush).toHaveBeenCalledWith("/login");
+      });
+    });
+
+    it("shows generic error message when load returns 500", async () => {
+      mockApiGet.mockRejectedValueOnce(
+        new ApiError(500, "INTERNAL_ERROR", "Failed to load account.")
+      );
+
+      const user = userEvent.setup();
+      render(authenticatedContext(<AccountUpdatePage />));
+
+      const accountInput = screen.getByLabelText(/account number/i);
+      await user.type(accountInput, "10000000001");
+      await user.click(screen.getByRole("button", { name: /load account/i }));
+
+      await waitFor(() => {
+        expect(screen.getByText(/failed to load account/i)).toBeInTheDocument();
+      });
+    });
+
+    it("shows connection error when load throws a non-ApiError (network failure)", async () => {
+      mockApiGet.mockRejectedValueOnce(new Error("Network error"));
+
+      const user = userEvent.setup();
+      render(authenticatedContext(<AccountUpdatePage />));
+
+      const accountInput = screen.getByLabelText(/account number/i);
+      await user.type(accountInput, "10000000001");
+      await user.click(screen.getByRole("button", { name: /load account/i }));
+
+      await waitFor(() => {
+        expect(screen.getByText(/unable to connect/i)).toBeInTheDocument();
+      });
+    });
+  });
+
+  // ---- Submit error handling -----------------------------------------------
+
+  describe("Submit error handling", () => {
+    async function loadForSubmit() {
+      mockSearchParams.get.mockReturnValue("10000000001");
+      mockApiGet.mockResolvedValue(mockAccountResponse);
+
+      const user = userEvent.setup();
+      render(authenticatedContext(<AccountUpdatePage />));
+
+      await waitFor(() =>
+        expect(
+          screen.getByRole("button", { name: /^save$/i })
+        ).toBeInTheDocument()
+      );
+
+      // Fill required SSN blanks
+      await user.type(screen.getByLabelText(/SSN area number/i), "123");
+      await user.type(screen.getByLabelText(/SSN group number/i), "45");
+
+      return user;
+    }
+
+    it("shows validation error message for non-NO_CHANGES 422 from save", async () => {
+      const user = await loadForSubmit();
+      mockApiPut.mockRejectedValueOnce(
+        new ApiError(422, "VALIDATION_ERROR", "Validation error. Please check your input.")
+      );
+
+      await user.click(screen.getByRole("button", { name: /^save$/i }));
+
+      await waitFor(() => {
+        expect(
+          screen.getByText(/validation error/i)
+        ).toBeInTheDocument();
+      });
+    });
+
+    it("redirects to /login when save returns 401", async () => {
+      const user = await loadForSubmit();
+      mockApiPut.mockRejectedValueOnce(
+        new ApiError(401, "UNAUTHORIZED", "Unauthorized")
+      );
+
+      await user.click(screen.getByRole("button", { name: /^save$/i }));
+
+      await waitFor(() => {
+        expect(mockRouterPush).toHaveBeenCalledWith("/login");
+      });
+    });
+
+    it("shows generic error when save returns 500", async () => {
+      const user = await loadForSubmit();
+      mockApiPut.mockRejectedValueOnce(
+        new ApiError(500, "INTERNAL_ERROR", "Update failed. Please try again.")
+      );
+
+      await user.click(screen.getByRole("button", { name: /^save$/i }));
+
+      await waitFor(() => {
+        expect(screen.getByText(/update failed/i)).toBeInTheDocument();
+      });
+    });
+
+    it("shows connection error when save throws a non-ApiError (network failure)", async () => {
+      const user = await loadForSubmit();
+      mockApiPut.mockRejectedValueOnce(new Error("Network error"));
+
+      await user.click(screen.getByRole("button", { name: /^save$/i }));
+
+      await waitFor(() => {
+        expect(screen.getByText(/unable to connect/i)).toBeInTheDocument();
+      });
+    });
+
+    it("Process button shows 'Saving…' and is disabled while save is in-flight", async () => {
+      const user = await loadForSubmit();
+
+      // Use a promise that stays pending so we can observe mid-flight state
+      let resolvePut!: (value: unknown) => void;
+      mockApiPut.mockImplementationOnce(
+        () => new Promise((resolve) => { resolvePut = resolve; })
+      );
+
+      await user.click(screen.getByRole("button", { name: /^save$/i }));
+
+      // Process button should show "Saving…" and be disabled while in-flight
+      await waitFor(() => {
+        const processBtn = screen.getByText(/saving…/i).closest("button");
+        expect(processBtn).toBeDisabled();
+      });
+
+      // Resolve to clean up
+      resolvePut(mockAccountResponse);
+    });
+  });
+
   // ---- Field validation (COACTUPC 2000-PROCESS-INPUTS) --------------------
 
   describe("Field validation — COBOL origin: COACTUPC 2000-PROCESS-INPUTS", () => {
@@ -898,10 +1065,29 @@ describe("AccountUpdatePage", () => {
   // ---- Exit / Cancel -------------------------------------------------------
 
   describe("Exit and Cancel buttons", () => {
-    it("calls router.back() when Exit is clicked", async () => {
+    it("calls router.back() when Exit is clicked (before account load)", async () => {
       const user = userEvent.setup();
       render(authenticatedContext(<AccountUpdatePage />));
       await user.click(screen.getByRole("button", { name: /exit/i }));
+      expect(mockRouterBack).toHaveBeenCalled();
+    });
+
+    it("calls router.back() when Exit is clicked within the loaded form (form-level exit)", async () => {
+      mockSearchParams.get.mockReturnValue("10000000001");
+      mockApiGet.mockResolvedValue(mockAccountResponse);
+
+      const user = userEvent.setup();
+      render(authenticatedContext(<AccountUpdatePage />));
+
+      await waitFor(() =>
+        expect(
+          screen.getByRole("button", { name: /^save$/i })
+        ).toBeInTheDocument()
+      );
+
+      // The Exit button inside the loaded form (second Exit button in the DOM)
+      const exitButtons = screen.getAllByRole("button", { name: /exit/i });
+      await user.click(exitButtons[exitButtons.length - 1]);
       expect(mockRouterBack).toHaveBeenCalled();
     });
 
