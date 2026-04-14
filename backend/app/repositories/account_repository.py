@@ -33,6 +33,44 @@ from app.models.account_customer_xref import AccountCustomerXref
 from app.models.customer import Customer
 
 
+# SEC-04: Allowlists of column names that may be mutated via update_account_and_customer.
+# setattr() on a SQLAlchemy mapped object does not raise for arbitrary attribute names,
+# so without this guard an unexpected key (e.g. from a future code-path bug) could
+# silently set a non-column attribute or interfere with _sa_instance_state.
+_ACCOUNT_UPDATABLE_FIELDS: frozenset = frozenset({
+    "active_status",
+    "open_date",
+    "expiration_date",
+    "reissue_date",
+    "credit_limit",
+    "cash_credit_limit",
+    "current_balance",
+    "curr_cycle_credit",
+    "curr_cycle_debit",
+    "group_id",
+})
+
+_CUSTOMER_UPDATABLE_FIELDS: frozenset = frozenset({
+    "first_name",
+    "middle_name",
+    "last_name",
+    "street_address_1",
+    "street_address_2",
+    "city",
+    "state_code",
+    "zip_code",
+    "country_code",
+    "phone_number_1",
+    "phone_number_2",
+    "ssn",
+    "date_of_birth",
+    "fico_score",
+    "government_id_ref",
+    "eft_account_id",
+    "primary_card_holder_flag",
+})
+
+
 class AccountRepository:
     """Data access for accounts, customers, and their cross-reference."""
 
@@ -122,10 +160,23 @@ class AccountRepository:
         Both updates run within the same SQLAlchemy session (transaction),
         matching COBOL's implicit within-task atomicity.
         """
+        # SEC-04: Validate field names against allowlists before applying setattr.
+        # setattr on a mapped object does not raise for non-column attribute names,
+        # so this guard prevents unexpected keys from silently corrupting ORM state.
         for field, value in account_changes.items():
+            if field not in _ACCOUNT_UPDATABLE_FIELDS:
+                raise ValueError(
+                    f"Unexpected account field in update dict: {field!r}. "
+                    f"Permitted fields: {sorted(_ACCOUNT_UPDATABLE_FIELDS)}"
+                )
             setattr(account, field, value)
 
         for field, value in customer_changes.items():
+            if field not in _CUSTOMER_UPDATABLE_FIELDS:
+                raise ValueError(
+                    f"Unexpected customer field in update dict: {field!r}. "
+                    f"Permitted fields: {sorted(_CUSTOMER_UPDATABLE_FIELDS)}"
+                )
             setattr(customer, field, value)
 
         db.add(account)

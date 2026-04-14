@@ -103,12 +103,18 @@ class Customer(Base):
         nullable=True,
         comment="CUST-PHONE-NUM-2 X(15) — ACSPHN2 BMS field",
     )
+    # TODO(security): SSN is stored as plaintext NNN-NN-NNNN. Production deployments
+    # MUST encrypt this column at rest using AES-256 or PostgreSQL pgcrypto before
+    # going live. Track as issue: TODO(issue): open a tracking ticket for SSN encryption.
+    # Until encryption is in place: (a) the idx_customers_ssn index is intentionally
+    # omitted from the migration (SEC-01), (b) SSN is never returned unmasked in any
+    # API response (_mask_ssn always shows ***-**-XXXX).
     ssn: Mapped[Optional[str]] = mapped_column(
         String(11),
         nullable=True,
         comment=(
             "CUST-SSN 9(9) stored as NNN-NN-NNNN. "
-            "SECURITY: encrypt at rest in production. "
+            "SECURITY: encrypt at rest in production (see TODO above). "
             "Never returned unmasked in any API response."
         ),
     )

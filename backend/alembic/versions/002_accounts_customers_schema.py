@@ -325,7 +325,13 @@ def upgrade() -> None:
         ),
     )
     op.create_index("idx_customers_last_name", "customers", ["last_name"])
-    op.create_index("idx_customers_ssn", "customers", ["ssn"])
+    # SEC-01: SSN index intentionally omitted.
+    # A plain B-tree index on an unencrypted SSN column materialises all SSN
+    # values in index pages on disk, exposing PII to anyone with pg_filedump or
+    # direct filesystem access — bypassing row-level security entirely.
+    # No current endpoint performs lookup by SSN, so there is no functional cost.
+    # When column-level SSN encryption is implemented (TODO: issue #security-ssn-at-rest),
+    # a hash-based or encrypted index can be added at that time.
 
     # Attach updated_at trigger to customers
     op.execute("""
@@ -374,7 +380,6 @@ def downgrade() -> None:
     op.drop_index("idx_acctcust_customer", table_name="account_customer_xref")
     op.drop_table("account_customer_xref")
 
-    op.drop_index("idx_customers_ssn", table_name="customers")
     op.drop_index("idx_customers_last_name", table_name="customers")
     op.drop_table("customers")
 

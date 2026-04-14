@@ -770,6 +770,8 @@ export default function AccountUpdatePage() {
                   required
                   hint="(NNN-NN-NNNN)"
                 >
+                  {/* SEC-07: autoComplete="off" on all SSN inputs prevents browsers from
+                      caching SSN fragments in autofill storage. */}
                   <div className="flex items-center gap-1">
                     <input
                       id="ssnPart1"
@@ -778,6 +780,10 @@ export default function AccountUpdatePage() {
                       maxLength={3}
                       placeholder="NNN"
                       aria-label="SSN area number (3 digits)"
+                      autoComplete="off"
+                      autoCorrect="off"
+                      autoCapitalize="off"
+                      spellCheck={false}
                       className={`w-16 px-2 py-1.5 border rounded-md text-sm font-mono text-center
                         focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
                         ${errors.ssnPart1 ? "border-red-400 bg-red-50" : "border-slate-300"}`}
@@ -790,6 +796,10 @@ export default function AccountUpdatePage() {
                       maxLength={2}
                       placeholder="NN"
                       aria-label="SSN group number (2 digits)"
+                      autoComplete="off"
+                      autoCorrect="off"
+                      autoCapitalize="off"
+                      spellCheck={false}
                       className={`w-12 px-2 py-1.5 border rounded-md text-sm font-mono text-center
                         focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
                         ${errors.ssnPart2 ? "border-red-400 bg-red-50" : "border-slate-300"}`}
@@ -802,6 +812,10 @@ export default function AccountUpdatePage() {
                       maxLength={4}
                       placeholder="NNNN"
                       aria-label="SSN serial number (4 digits)"
+                      autoComplete="off"
+                      autoCorrect="off"
+                      autoCapitalize="off"
+                      spellCheck={false}
                       className={`w-16 px-2 py-1.5 border rounded-md text-sm font-mono text-center
                         focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
                         ${errors.ssnPart3 ? "border-red-400 bg-red-50" : "border-slate-300"}`}
@@ -820,9 +834,11 @@ export default function AccountUpdatePage() {
                   error={errors.dateOfBirth?.message}
                   required
                 >
+                  {/* SEC-07: autoComplete="off" prevents browser from caching date of birth */}
                   <input
                     id="dateOfBirth"
                     type="date"
+                    autoComplete="off"
                     className={inputClass(!!errors.dateOfBirth)}
                     {...register("dateOfBirth")}
                   />
@@ -835,11 +851,13 @@ export default function AccountUpdatePage() {
                   error={errors.ficoScore?.message}
                   hint="(300–850)"
                 >
+                  {/* SEC-07: autoComplete="off" prevents browser from caching FICO score */}
                   <input
                     id="ficoScore"
                     type="number"
                     min={300}
                     max={850}
+                    autoComplete="off"
                     className={inputClass(!!errors.ficoScore)}
                     {...register("ficoScore", { valueAsNumber: true })}
                   />

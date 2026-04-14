@@ -155,6 +155,26 @@ class TestGetAccountEndpoint:
         assert response.json()["error_code"] == "UNAUTHORIZED"
 
     @pytest.mark.asyncio
+    async def test_get_account_not_found_never_returns_customer_not_found_error_code(
+        self, client: AsyncClient, seed_accounts, auth_token: str
+    ):
+        """
+        404 response must never use CUSTOMER_NOT_FOUND error code.
+
+        SEC-02: Returning distinct error codes for "account missing" vs
+        "account exists but has no customer" would allow enumeration of
+        which account IDs exist in the system. Both 404 paths must use
+        the same ACCOUNT_NOT_FOUND code.
+        """
+        response = await client.get(
+            "/api/v1/accounts/99999999999",
+            headers={"Authorization": f"Bearer {auth_token}"},
+        )
+        assert response.status_code == 404
+        assert response.json()["error_code"] == "ACCOUNT_NOT_FOUND"
+        assert "CUSTOMER_NOT_FOUND" not in response.text
+
+    @pytest.mark.asyncio
     async def test_get_account_zero_id_returns_422(
         self, client: AsyncClient, seed_accounts, auth_token: str
     ):
@@ -428,6 +448,46 @@ class TestUpdateAccountEndpoint:
             headers={"Authorization": f"Bearer {auth_token}"},
         )
         assert response.status_code == 422
+
+    @pytest.mark.asyncio
+    async def test_update_account_zero_id_returns_422(
+        self, client: AsyncClient, seed_accounts, auth_token: str
+    ):
+        """
+        account_id=0 on PUT → 422 INVALID_ACCOUNT_ID.
+
+        SEC-03: PUT was missing the account_id > 0 guard present on GET.
+        A zero or negative ID should be rejected before any DB access,
+        returning 422 consistent with the GET endpoint behaviour.
+        """
+        response = await client.put(
+            "/api/v1/accounts/0",
+            json=_valid_update_body(),
+            headers={"Authorization": f"Bearer {auth_token}"},
+        )
+        # FastAPI Path(gt=0) rejects at the router layer with 422
+        assert response.status_code == 422
+
+    @pytest.mark.asyncio
+    async def test_update_account_not_found_returns_account_not_found_error_code(
+        self, client: AsyncClient, seed_accounts, auth_token: str
+    ):
+        """
+        Non-existent account_id on PUT → 404 with error_code ACCOUNT_NOT_FOUND,
+        NOT CUSTOMER_NOT_FOUND.
+
+        SEC-02: Both 404 paths (account missing, customer missing) must return
+        the same error_code to prevent enumeration of which account IDs exist.
+        """
+        response = await client.put(
+            "/api/v1/accounts/99999999999",
+            json=_valid_update_body(),
+            headers={"Authorization": f"Bearer {auth_token}"},
+        )
+        assert response.status_code == 404
+        # Must be the generic ACCOUNT_NOT_FOUND, never CUSTOMER_NOT_FOUND
+        assert response.json()["error_code"] == "ACCOUNT_NOT_FOUND"
+        assert "CUSTOMER_NOT_FOUND" not in response.text
 
     @pytest.mark.asyncio
     async def test_update_account_response_has_masked_ssn(

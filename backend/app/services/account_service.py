@@ -150,6 +150,10 @@ class AccountService:
 
         customer = await AccountRepository.get_customer_by_account_id(db, account_id)
         if customer is None:
+            # SEC-02: Log the internal distinction server-side for diagnostics,
+            # but return the same ACCOUNT_NOT_FOUND code as the account-missing
+            # path. Returning a distinct CUSTOMER_NOT_FOUND code would let an
+            # authenticated caller enumerate which account IDs exist in the system.
             logger.warning(
                 "customer_not_found_for_account",
                 account_id=account_id,
@@ -158,8 +162,8 @@ class AccountService:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail={
-                    "error_code": "CUSTOMER_NOT_FOUND",
-                    "message": f"No customer linked to account {account_id}",
+                    "error_code": "ACCOUNT_NOT_FOUND",
+                    "message": f"Account {account_id} not found",
                 },
             )
 
@@ -197,6 +201,19 @@ class AccountService:
           4. At least one field must have changed (422 NO_CHANGES_DETECTED)
              Maps COACTUPC WS-DATACHANGED-FLAG='0' path
         """
+        # SEC-03: Consistent with get_account — validate account_id > 0 before
+        # any DB access. Without this guard a zero/negative ID returns 404 instead
+        # of the expected 422 INVALID_ACCOUNT_ID, creating an inconsistency that
+        # can confuse clients and obscure input-validation errors.
+        if account_id <= 0:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail={
+                    "error_code": "INVALID_ACCOUNT_ID",
+                    "message": "Account number must be a non-zero positive value",
+                },
+            )
+
         account = await AccountRepository.get_account_by_id(db, account_id)
         if account is None:
             raise HTTPException(
@@ -209,11 +226,18 @@ class AccountService:
 
         customer = await AccountRepository.get_customer_by_account_id(db, account_id)
         if customer is None:
+            # SEC-02: Same normalised error code as account-missing path to prevent
+            # enumeration of which account IDs exist in the system.
+            logger.warning(
+                "customer_not_found_for_account",
+                account_id=account_id,
+                requesting_user_id=requesting_user_id,
+            )
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail={
-                    "error_code": "CUSTOMER_NOT_FOUND",
-                    "message": f"No customer linked to account {account_id}",
+                    "error_code": "ACCOUNT_NOT_FOUND",
+                    "message": f"Account {account_id} not found",
                 },
             )
 

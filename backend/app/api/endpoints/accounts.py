@@ -18,7 +18,7 @@ Router is thin — no business logic here. All logic delegates to AccountService
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -27,8 +27,10 @@ from app.database import get_db
 from app.schemas.account import AccountUpdateRequest, AccountViewResponse
 from app.services.account_service import AccountService
 from app.utils.security import decode_access_token
-
-from fastapi import HTTPException
+# SEC-08: Use the shared Limiter instance (same object registered on app.state
+# in main.py). A locally constructed Limiter would not share state and would
+# silently defeat rate limiting — see auth endpoint refactoring note.
+from app.utils.rate_limit import limiter
 
 router = APIRouter(prefix="/accounts", tags=["Accounts"])
 _security_scheme = HTTPBearer()
@@ -76,10 +78,19 @@ async def get_current_user(
         401: {"description": "Missing or invalid Bearer token"},
         404: {"description": "Account or linked customer not found"},
         422: {"description": "Invalid account_id (zero or negative)"},
+        429: {"description": "Rate limit exceeded — too many requests"},
     },
 )
+# SEC-08: Rate limit GET to 120/minute per IP. Account view is read-only but an
+# attacker with a valid token could enumerate account IDs at high speed; limiting
+# to 2 req/sec balances usability against enumeration risk.
+@limiter.limit("120/minute")
 async def get_account(
-    account_id: int,
+    request: Request,
+    # SEC-03: Path(gt=0) enforces positive account_id at the FastAPI layer
+    # before any service or DB logic runs. The service layer also validates
+    # account_id > 0 for defence in depth.
+    account_id: Annotated[int, Path(gt=0, description="11-digit account number (must be > 0)")],
     current_user: Annotated[dict, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> AccountViewResponse:
@@ -87,11 +98,12 @@ async def get_account(
     Retrieve account and customer details.
 
     COBOL origin: COACTVWC MAIN-PARA → 9000-READ-ACCT paragraph.
+    Rate limited to 120/minute per IP (SEC-08).
     """
     return await AccountService.get_account(
         db=db,
         account_id=account_id,
-        requesting_user_id=current_user.get("sub", "unknown"),
+        requesting_user_id=str(current_user.get("sub", "unknown")),
     )
 
 
@@ -117,11 +129,18 @@ async def get_account(
                 "cash limit > credit limit, or no changes detected"
             )
         },
+        429: {"description": "Rate limit exceeded — too many requests"},
     },
 )
+# SEC-08: Rate limit PUT to 30/minute per IP. Tighter than GET because each
+# successful update writes SSN and financial data to the database. This limits
+# a compromised token from driving bulk SSN-change attacks across many accounts.
+@limiter.limit("30/minute")
 async def update_account(
-    account_id: int,
-    request: AccountUpdateRequest,
+    request: Request,
+    # SEC-03: Same Path(gt=0) constraint as GET for consistent input validation.
+    account_id: Annotated[int, Path(gt=0, description="11-digit account number (must be > 0)")],
+    body: AccountUpdateRequest,
     current_user: Annotated[dict, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> AccountViewResponse:
@@ -129,10 +148,11 @@ async def update_account(
     Update account and customer fields.
 
     COBOL origin: COACTUPC MAIN-PARA → 2000-PROCESS-INPUTS → 9000-UPDATE-ACCOUNT.
+    Rate limited to 30/minute per IP (SEC-08).
     """
     return await AccountService.update_account(
         db=db,
         account_id=account_id,
-        request=request,
-        requesting_user_id=current_user.get("sub", "unknown"),
+        request=body,
+        requesting_user_id=str(current_user.get("sub", "unknown")),
     )
