@@ -44,8 +44,9 @@ security_scheme = HTTPBearer()
 # per-IP rate limiting to be bypassed by cycling through arbitrary IPs.
 #
 # The list is derived from settings.TRUSTED_PROXY_CIDRS so operators can
-# override the defaults via the TRUSTED_PROXY_CIDRS environment variable
-# without touching source code (addresses SonarQube security hotspot).
+# configure trusted proxies via environment variable without touching source
+# code. Empty by default — X-Forwarded-For is never trusted unless the
+# operator explicitly sets TRUSTED_PROXY_CIDRS.
 # ---------------------------------------------------------------------------
 _TRUSTED_PROXY_NETS = [
     ipaddress.ip_network(cidr) for cidr in settings.TRUSTED_PROXY_CIDRS

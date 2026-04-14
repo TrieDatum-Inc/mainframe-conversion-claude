@@ -154,14 +154,17 @@ class TestAuthEndpointClientIp:
 
     def test_get_client_ip_from_trusted_proxy_xff(self):
         """When connection is from a trusted proxy, X-Forwarded-For is used."""
-        from unittest.mock import MagicMock
+        import ipaddress
+        from unittest.mock import MagicMock, patch
         from app.api.endpoints.auth import _get_client_ip
 
+        trusted = [ipaddress.ip_network("127.0.0.0/8")]
         request = MagicMock()
         request.client.host = "127.0.0.1"  # loopback — trusted proxy
         request.headers.get.return_value = "203.0.113.42, 10.0.0.1"
 
-        ip = _get_client_ip(request)
+        with patch("app.api.endpoints.auth._TRUSTED_PROXY_NETS", trusted):
+            ip = _get_client_ip(request)
         assert ip == "203.0.113.42"
 
     def test_get_client_ip_no_xff_from_proxy_returns_proxy_ip(self):
@@ -199,27 +202,28 @@ class TestAuthEndpointClientIp:
         assert ip == "not-an-ip-address"
 
     def test_get_client_ip_ipv6_loopback_trusted(self):
-        """IPv6 loopback (::1) is treated as a trusted proxy."""
-        from unittest.mock import MagicMock
+        """IPv6 loopback (::1) is treated as trusted when configured."""
+        import ipaddress
+        from unittest.mock import MagicMock, patch
         from app.api.endpoints.auth import _get_client_ip
 
+        trusted = [ipaddress.ip_network("::1/128")]
         request = MagicMock()
         request.client.host = "::1"
         request.headers.get.return_value = "2001:db8::1"
 
-        ip = _get_client_ip(request)
+        with patch("app.api.endpoints.auth._TRUSTED_PROXY_NETS", trusted):
+            ip = _get_client_ip(request)
         assert ip == "2001:db8::1"
 
     def test_trusted_proxy_nets_reflects_settings_cidrs(self):
         """
         _TRUSTED_PROXY_NETS is derived from settings.TRUSTED_PROXY_CIDRS so
         that the module-level list matches whatever the operator has configured.
-        This test verifies that every CIDR in settings is represented as an
-        ip_network object in _TRUSTED_PROXY_NETS (no hard-coded divergence).
+        With the default empty TRUSTED_PROXY_CIDRS, _TRUSTED_PROXY_NETS is also empty.
         """
-        import ipaddress
         from app.config import settings
         from app.api.endpoints.auth import _TRUSTED_PROXY_NETS
 
-        expected = [ipaddress.ip_network(cidr) for cidr in settings.TRUSTED_PROXY_CIDRS]
-        assert _TRUSTED_PROXY_NETS == expected
+        assert _TRUSTED_PROXY_NETS == []
+        assert settings.TRUSTED_PROXY_CIDRS == []

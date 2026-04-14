@@ -36,16 +36,10 @@ class Settings(BaseSettings):
     # Trusted reverse-proxy CIDRs for X-Forwarded-For validation.
     # X-Forwarded-For is only honoured when the direct TCP connection originates
     # from one of these networks (i.e., a reverse proxy we control).
-    # Operators can override this list via the TRUSTED_PROXY_CIDRS environment
-    # variable (comma-separated CIDR strings, or a JSON list).
-    # Defaults cover RFC 1918 private ranges and loopback addresses.
-    TRUSTED_PROXY_CIDRS: List[str] = [
-        "127.0.0.0/8",    # loopback
-        "10.0.0.0/8",     # RFC 1918
-        "172.16.0.0/12",  # RFC 1918
-        "192.168.0.0/16", # RFC 1918
-        "::1/128",        # IPv6 loopback
-    ]
+    # Set via the TRUSTED_PROXY_CIDRS environment variable (JSON list or
+    # comma-separated CIDR strings) to match your deployment topology.
+    # Empty by default — no proxy is trusted unless explicitly configured.
+    TRUSTED_PROXY_CIDRS: List[str] = []
 
     # CORS — list of allowed origins for the Next.js frontend
     CORS_ORIGINS: List[str] = ["http://localhost:3000"]
