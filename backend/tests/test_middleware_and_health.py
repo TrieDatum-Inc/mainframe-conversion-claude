@@ -123,6 +123,19 @@ class TestAppFactory:
         app = create_app()
         assert settings.APP_NAME in app.title
 
+    @pytest.mark.asyncio
+    async def test_lifespan_startup_and_shutdown_logs(self):
+        """Lifespan context manager executes startup and shutdown log calls."""
+        from app.main import create_app, lifespan
+
+        app = create_app()
+
+        # Call the lifespan context manager directly. ASGITransport (httpx 0.27)
+        # does not send ASGI lifespan events, so we invoke the generator manually.
+        # This covers main.py lines 31-37: logger.info at startup and shutdown.
+        async with lifespan(app):
+            pass  # yield point — both startup and shutdown branches are exercised
+
 
 class TestAuthEndpointClientIp:
     """Tests for _get_client_ip() logic in the auth endpoint."""

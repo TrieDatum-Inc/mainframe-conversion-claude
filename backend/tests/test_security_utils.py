@@ -216,3 +216,46 @@ class TestRevokeToken:
         )
         # Should be silently ignored (JWTError caught internally)
         revoke_token(token)
+
+
+class TestBlacklistBackendWarning:
+    """Test the module-level RuntimeWarning for in-memory blacklist in non-debug mode."""
+
+    def test_memory_blacklist_warns_when_debug_false(self):
+        """security.py emits RuntimeWarning when BLACKLIST_BACKEND=memory and DEBUG!=true."""
+        import importlib
+        import os
+        import sys
+        import warnings
+
+        # Remove the already-loaded module so we can reload it with different env
+        mod_name = "app.utils.security"
+        original_mod = sys.modules.pop(mod_name, None)
+        original_debug = os.environ.get("DEBUG")
+        original_backend = os.environ.get("BLACKLIST_BACKEND")
+
+        try:
+            os.environ["DEBUG"] = "false"
+            os.environ["BLACKLIST_BACKEND"] = "memory"
+
+            with warnings.catch_warnings(record=True) as caught:
+                warnings.simplefilter("always")
+                importlib.import_module(mod_name)
+
+            runtime_warnings = [w for w in caught if issubclass(w.category, RuntimeWarning)]
+            assert len(runtime_warnings) == 1
+            assert "in-memory" in str(runtime_warnings[0].message).lower()
+        finally:
+            # Restore environment and module registry
+            if original_debug is None:
+                os.environ.pop("DEBUG", None)
+            else:
+                os.environ["DEBUG"] = original_debug
+            if original_backend is None:
+                os.environ.pop("BLACKLIST_BACKEND", None)
+            else:
+                os.environ["BLACKLIST_BACKEND"] = original_backend
+            # Restore original module to avoid polluting other tests
+            sys.modules.pop(mod_name, None)
+            if original_mod is not None:
+                sys.modules[mod_name] = original_mod
