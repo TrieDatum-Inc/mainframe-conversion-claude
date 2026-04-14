@@ -22,11 +22,17 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy import event
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 
+from datetime import date
+from decimal import Decimal
+
 from app.database import Base, get_db
 from app.main import create_app
 from app.models.user import User
+from app.models.account import Account
+from app.models.customer import Customer
+from app.models.account_customer_xref import AccountCustomerXref
 from app.utils.rate_limit import limiter
-from app.utils.security import hash_password
+from app.utils.security import hash_password, create_access_token
 
 # Use SQLite in-memory database for tests (no PostgreSQL required)
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
@@ -112,6 +118,66 @@ async def seed_users(db_session: AsyncSession) -> list[User]:
         db_session.add(user)
     await db_session.commit()
     return users
+
+
+@pytest_asyncio.fixture
+async def seed_accounts(db_session: AsyncSession):
+    """
+    Insert test Account, Customer, and AccountCustomerXref rows.
+
+    Mirrors representative ACCTDAT + CUSTDAT + CXACAIX test records:
+      Account 10000000001 linked to Customer 100001
+    """
+    account = Account(
+        account_id=10000000001,
+        active_status="Y",
+        current_balance=Decimal("250.00"),
+        credit_limit=Decimal("5000.00"),
+        cash_credit_limit=Decimal("1000.00"),
+        open_date=date(2020, 1, 15),
+        expiration_date=date(2026, 1, 15),
+        reissue_date=date(2024, 1, 15),
+        curr_cycle_credit=Decimal("0.00"),
+        curr_cycle_debit=Decimal("250.00"),
+        zip_code="62701",
+        group_id="GRP001",
+    )
+    customer = Customer(
+        customer_id=100001,
+        first_name="Alice",
+        middle_name="B",
+        last_name="Smith",
+        street_address_1="123 Main St",
+        city="Springfield",
+        state_code="IL",
+        zip_code="62701",
+        country_code="USA",
+        phone_number_1="217-555-1234",
+        ssn="123-45-6789",
+        date_of_birth=date(1985, 6, 15),
+        fico_score=720,
+        government_id_ref="DL-IL-123456",
+        eft_account_id="EFT0001",
+        primary_card_holder_flag="Y",
+    )
+    xref = AccountCustomerXref(account_id=10000000001, customer_id=100001)
+    db_session.add(account)
+    db_session.add(customer)
+    await db_session.flush()  # ensure FKs are satisfied
+    db_session.add(xref)
+    await db_session.commit()
+    return account, customer, xref
+
+
+@pytest.fixture
+def auth_token() -> str:
+    """
+    Generate a valid JWT access token for test authentication.
+
+    Maps the JWT that would be issued by POST /api/v1/auth/login for ADMIN001.
+    Used as Authorization: Bearer header in account endpoint tests.
+    """
+    return create_access_token(subject="ADMIN001", user_type="A")
 
 
 @pytest_asyncio.fixture
