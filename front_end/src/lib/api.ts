@@ -119,4 +119,34 @@ async function get<T>(path: string, options?: RequestInit): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-export const api = { post, get };
+/**
+ * PUT request to the API.
+ *
+ * Usage:
+ *   const response = await api.put<AccountViewResponse>(
+ *     `/api/v1/accounts/${accountId}`,
+ *     updateRequest
+ *   )
+ */
+async function put<T>(
+  path: string,
+  body: unknown,
+  options?: RequestInit
+): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: "PUT",
+    headers: buildHeaders(
+      options?.headers as Record<string, string> | undefined
+    ),
+    body: JSON.stringify(body),
+    ...options,
+  });
+
+  if (!response.ok) {
+    await handleErrorResponse(response);
+  }
+
+  return response.json() as Promise<T>;
+}
+
+export const api = { post, get, put };

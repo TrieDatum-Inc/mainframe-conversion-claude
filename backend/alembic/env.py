@@ -9,7 +9,7 @@ from alembic import context
 
 # Import all models so Alembic can detect them
 from app.database import Base
-from app.models import User  # noqa: F401
+from app.models import User, Account, Customer, AccountCustomerXref  # noqa: F401
 
 config = context.config
 
